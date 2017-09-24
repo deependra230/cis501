@@ -28,10 +28,10 @@ public class TraceAnalyzer implements ITraceAnalyzer {
     private int[] directBranchOffsetBitsCounts;
 
     public TraceAnalyzer() {
-        totalInsnsCount = 0;
-        thumbInsnsCount = 0;
-        ARMInsnsCount = 0;
-        directBranchOffsetBitsCounts = new int[DIRECT_BRANCH_OFFSET_BITS_VALUES];
+        this.totalInsnsCount = 0;
+        this.thumbInsnsCount = 0;
+        this.ARMInsnsCount = 0;
+        this.directBranchOffsetBitsCounts = new int[DIRECT_BRANCH_OFFSET_BITS_VALUES];
     }
 
     @Override
