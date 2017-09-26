@@ -19,6 +19,7 @@ public class InorderPipelineSampleTest {
     private static IInorderPipeline sim;
 
     private static Insn makeInsn(int dst, int src1, int src2, MemoryOp mop) {
+        if (MemoryOp.Store == mop) assert -1 == dst : dst;
         return new Insn(dst, src1, src2,
                 1, 4,
                 null, 0, null,
@@ -70,7 +71,7 @@ public class InorderPipelineSampleTest {
         List<Insn> insns = new LinkedList<>();
         final int COUNT = 10;
         for (int i = 0; i < COUNT; i++) {
-            insns.add(makeInsn(3, 1, 2, MemoryOp.Store)); // no load-use dependencies
+            insns.add(makeInsn(-1, 1, 2, MemoryOp.Store)); // no load-use dependencies
         }
         sim.run(insns);
         assertEquals(COUNT, sim.getInsns());
@@ -107,7 +108,7 @@ public class InorderPipelineSampleTest {
     public void testLoadUseStoreAddress() {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
-        insns.add(makeInsn(5, 4, 3, MemoryOp.Store)); // load to src reg 2 (store address), so we stall
+        insns.add(makeInsn(-1, 4, 3, MemoryOp.Store)); // load to src reg 2 (store address), so we stall
         sim.run(insns);
         assertEquals(2, sim.getInsns());
         // 123456789abc
@@ -121,7 +122,7 @@ public class InorderPipelineSampleTest {
     public void testLoadUseStoreValue() {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
-        insns.add(makeInsn(5, 3, 4, MemoryOp.Store)); // load to src reg 1 (store value), so no stall
+        insns.add(makeInsn(-1, 3, 4, MemoryOp.Store)); // load to src reg 1 (store value), so no stall
         sim.run(insns);
         assertEquals(2, sim.getInsns());
         // 123456789abcdef
