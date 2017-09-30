@@ -12,7 +12,7 @@ import static org.junit.Assert.assertEquals;
 public class BranchPredSampleTest {
 
     // TODO: replace the path of trace file here
-    private static final String TRACE_FILE = "path/to/go-10M.trace.gz";
+    private static final String TRACE_FILE = "./test/resources/cis501/submission/streamcluster-10M-v2.trace.gz";
 
     private IBranchTargetBuffer btb;
     private IDirectionPredictor bimodal;

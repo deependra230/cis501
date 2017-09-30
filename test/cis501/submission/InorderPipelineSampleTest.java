@@ -13,6 +13,8 @@ import static org.junit.Assert.assertEquals;
 
 public class InorderPipelineSampleTest {
 
+    private static final String TRACE_FILE = "./test/resources/cis501/submission/streamcluster-10M-v2.trace.gz";
+
     private InsnIterator uiter;
     private InsnIterator uiter_full;
 
@@ -51,9 +53,8 @@ public class InorderPipelineSampleTest {
         wM_Dependency_StoreVal_Insns.add(makeInsn(-1, 1, 10, MemoryOp.Store)); //store-val is dependent
 
 
-        String traceFilePath = "./test/resources/cis501/submission/streamcluster-10M-v2.trace.gz";
-        this.uiter = new InsnIterator(traceFilePath, 5000);
-        this.uiter_full = new InsnIterator(traceFilePath, -1);
+        this.uiter = new InsnIterator(TRACE_FILE, 5000);
+        this.uiter_full = new InsnIterator(TRACE_FILE, -1);
     }
 
     @Test
@@ -118,7 +119,7 @@ public class InorderPipelineSampleTest {
         List<Insn> insns = new LinkedList<>();
         final int COUNT = 10;
         for (int i = 0; i < COUNT; i++) {
-            insns.add(makeInsn(3, 1, 2, MemoryOp.Store)); // no load-use dependencies
+            insns.add(makeInsn(-1, 1, 2, MemoryOp.Store)); // no load-use dependencies
         }
         sim_FullBypass_MemLat1.run(insns);
         assertEquals(COUNT, sim_FullBypass_MemLat1.getInsns());
@@ -219,7 +220,7 @@ public class InorderPipelineSampleTest {
     public void test_NoBypass_LoadStoreValueDependency() {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
-        insns.add(makeInsn(5, 3, 4, MemoryOp.Store)); // load to store value
+        insns.add(makeInsn(-1, 3, 4, MemoryOp.Store)); // load to store value
 
         InorderPipeline sim_NoBypass_MemLat0 = new InorderPipeline(0, Bypass.NO_BYPASS);
         sim_NoBypass_MemLat0.run(insns);
@@ -234,7 +235,7 @@ public class InorderPipelineSampleTest {
     public void test_WXBypass_LoadStoreValueDependency() {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
-        insns.add(makeInsn(5, 3, 4, MemoryOp.Store)); // load to store value
+        insns.add(makeInsn(-1, 3, 4, MemoryOp.Store)); // load to store value
 
         InorderPipeline sim_WXBypass_MemLat0 = new InorderPipeline(0, EnumSet.of(Bypass.WX));
         sim_WXBypass_MemLat0.run(insns);
@@ -249,7 +250,7 @@ public class InorderPipelineSampleTest {
     public void test_WMBypass_LoadStoreValueDependency() {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
-        insns.add(makeInsn(5, 3, 4, MemoryOp.Store)); // load to store value
+        insns.add(makeInsn(-1, 3, 4, MemoryOp.Store)); // load to store value
 
         InorderPipeline sim_WMBypass_MemLat0 = new InorderPipeline(0, EnumSet.of(Bypass.WM));
         sim_WMBypass_MemLat0.run(insns);
@@ -265,7 +266,7 @@ public class InorderPipelineSampleTest {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
         insns.add(makeInsn(10, 11, 12, null));
-        insns.add(makeInsn(5, 3, 4, MemoryOp.Store)); // load to store value
+        insns.add(makeInsn(-1, 3, 4, MemoryOp.Store)); // load to store value
 
         InorderPipeline sim_NoBypass_MemLat2 = new InorderPipeline(2, Bypass.NO_BYPASS);
         sim_NoBypass_MemLat2.run(insns);
@@ -282,7 +283,7 @@ public class InorderPipelineSampleTest {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
         insns.add(null);
-        insns.add(makeInsn(5, 3, 4, MemoryOp.Store)); // load to store value
+        insns.add(makeInsn(-1, 3, 4, MemoryOp.Store)); // load to store value
 
         InorderPipeline sim_NoBypass_MemLat2 = new InorderPipeline(2, Bypass.NO_BYPASS);
         sim_NoBypass_MemLat2.run(insns);
@@ -298,7 +299,7 @@ public class InorderPipelineSampleTest {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
         insns.add(null);
-        insns.add(makeInsn(5, 3, 4, MemoryOp.Store)); // load to store value
+        insns.add(makeInsn(-1, 3, 4, MemoryOp.Store)); // load to store value
 
         InorderPipeline sim_WMBypass_MemLat2 = new InorderPipeline(2, EnumSet.of(Bypass.WM));
         sim_WMBypass_MemLat2.run(insns);
@@ -314,7 +315,7 @@ public class InorderPipelineSampleTest {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
         insns.add(null);
-        insns.add(makeInsn(5, 4, 3, MemoryOp.Store)); // load to store addr
+        insns.add(makeInsn(-1, 4, 3, MemoryOp.Store)); // load to store addr
 
         InorderPipeline sim_WMBypass_MemLat2 = new InorderPipeline(2, EnumSet.of(Bypass.WM));
         sim_WMBypass_MemLat2.run(insns);
@@ -330,7 +331,7 @@ public class InorderPipelineSampleTest {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
         insns.add(null);
-        insns.add(makeInsn(5, 4, 3, MemoryOp.Store)); // load to store addr
+        insns.add(makeInsn(-1, 4, 3, MemoryOp.Store)); // load to store addr
 
         InorderPipeline sim_WXBypass_MemLat2 = new InorderPipeline(2, EnumSet.of(Bypass.WX));
         sim_WXBypass_MemLat2.run(insns);

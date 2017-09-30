@@ -64,6 +64,8 @@ public class InorderPipeline implements IInorderPipeline {
      * @param bp                   the branch predictor to use
      */
     public InorderPipeline(int additionalMemLatency, BranchPredictor bp) {
+        this.additionalMemLatency = additionalMemLatency;
+        this.bypasses = Bypass.FULL_BYPASS;
     }
 
     @Override
