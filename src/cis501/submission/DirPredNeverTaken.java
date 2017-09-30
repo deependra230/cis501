@@ -6,7 +6,7 @@ import cis501.IDirectionPredictor;
 public class DirPredNeverTaken implements IDirectionPredictor {
     @Override
     public Direction predict(long pc) {
-        return null;
+        return Direction.NotTaken;
     }
 
     @Override

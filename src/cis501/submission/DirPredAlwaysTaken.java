@@ -7,7 +7,7 @@ public class DirPredAlwaysTaken implements IDirectionPredictor {
 
     @Override
     public Direction predict(long pc) {
-        return null;
+        return Direction.Taken;
     }
 
     @Override

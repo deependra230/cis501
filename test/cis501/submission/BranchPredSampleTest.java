@@ -83,6 +83,11 @@ public class BranchPredSampleTest {
     public void testRemainderIndexing2() {
         assertEquals(Direction.NotTaken, bimodal.predict(-1));
     }
+    @Test
+    public void testRemainderIndexing2gShare() {
+        assertEquals(Direction.NotTaken, gshare.predict(-1));
+    }
+
 
     @Test
     public void testBimodalTaken() {
