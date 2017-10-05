@@ -83,9 +83,7 @@ public class InorderPipeline implements IInorderPipeline {
     }
 
     @Override
-    public void run(Iterable<Insn> ii) {
-        Iterator<Insn> insnIterator = ii.iterator();
-
+    public void run(InsnIterator ii) {
         int remainingMemLatency = 1 + additionalMemLatency;
 
         /* In order to simulate the branch-predictor, we keep track of the last-fetched-PC
@@ -96,14 +94,14 @@ public class InorderPipeline implements IInorderPipeline {
         branchPredictorPCs.add(null);
         branchPredictorPCs.add(null);
 
-        while (insnIterator.hasNext() || !isPipelineEmpty()) {
-            remainingMemLatency = advanceInsns(remainingMemLatency, bypasses, branchPredictorPCs, insnIterator);
+        while (ii.hasNext() || !isPipelineEmpty()) {
+            remainingMemLatency = advanceInsns(remainingMemLatency, bypasses, branchPredictorPCs, ii);
 
-            if (!hasInsn(Stage.FETCH) && insnIterator.hasNext()) {
-                pipeline.set(Stage.FETCH.i(), insnIterator.next());
+            if (!hasInsn(Stage.FETCH) && ii.hasNext()) {
+                pipeline.set(Stage.FETCH.i(), ii.next());
                 numInsns += 1;
 
-                //simulate branch predictor
+            //simulate branch predictor
                 if (lastFetchedInsn != null) {
                     // Note that we are only simulating the branch prediction, otherwise we should have put last
                     // predicted insn's fall-through-pc here
@@ -140,7 +138,7 @@ public class InorderPipeline implements IInorderPipeline {
     }
 
     private int advanceInsns(int remainingMemLatency, Set<Bypass> bypasses, List<Pair<Long, Long>> branchPredictorPCs,
-                             InsnIterator insnIterator) {
+                             InsnIterator ii) {
         // Insn in the W stage will always progress
         pipeline.set(Stage.WRITEBACK.i(), null);
 

@@ -157,7 +157,7 @@ public class BranchPredSampleTest {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeBr(0, Direction.NotTaken, 40));
         insns.add(makeBr(4, Direction.NotTaken, 40));
-        pipe.run(insns);
+        pipe.run(new InsnIterator(insns));
 
         assertEquals(2, pipe.getInsns());
         // 123456789
@@ -171,7 +171,7 @@ public class BranchPredSampleTest {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeBr(0, Direction.Taken, 40));  // mispredicted
         insns.add(makeBr(40, Direction.NotTaken, 60));
-        pipe.run(insns);
+        pipe.run(new InsnIterator(insns));
 
         assertEquals(2, pipe.getInsns());
         // 123456789
@@ -186,7 +186,7 @@ public class BranchPredSampleTest {
         insns.add(makeBr(0, Direction.Taken, 40));  // mispredicted
         insns.add(makeBr(40, Direction.Taken, 60));  // mispredicted
         insns.add(makeBr(60, Direction.NotTaken, 80));
-        pipe.run(insns);
+        pipe.run(new InsnIterator(insns));
 
         assertEquals(3, pipe.getInsns());
         // 123456789abcd

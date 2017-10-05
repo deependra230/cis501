@@ -68,7 +68,7 @@ public class Insn {
         this.srcReg2 = (short) sr2;
         this.pc = pc;
         this.insnSizeBytes = (short) isize;
-        this.branchType = BranchType.ConditionalDirect;
+        this.branchType = (null == dir) ? null : BranchType.ConditionalDirect;
         this.branchDirection = dir;
         this.branchTarget = branchTarget;
         this.condCode = cc;

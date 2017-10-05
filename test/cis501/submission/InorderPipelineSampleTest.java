@@ -61,7 +61,7 @@ public class InorderPipelineSampleTest {
     public void test1Uop() {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, null));
-        sim.run(insns);
+        sim.run(new InsnIterator(insns));
         assertEquals(1, sim.getInsns());
         // 12345678
         // fdxmw|
@@ -75,7 +75,7 @@ public class InorderPipelineSampleTest {
         for (int i = 0; i < COUNT; i++) {
             insns.add(makeInsn(3, 1, 2, null));
         }
-        sim.run(insns);
+        sim.run(new InsnIterator(insns));
         assertEquals(COUNT, sim.getInsns());
         assertEquals(5 + COUNT, sim.getCycles());
     }
@@ -84,7 +84,7 @@ public class InorderPipelineSampleTest {
     public void test1MemUop() {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
-        sim.run(insns);
+        sim.run(new InsnIterator(insns));
         assertEquals(1, sim.getInsns());
         // 123456789abcdef
         // fdxmw|
@@ -95,7 +95,7 @@ public class InorderPipelineSampleTest {
     public void test1MemUopLatency1() {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
-        sim_FullBypass_MemLat1.run(insns);
+        sim_FullBypass_MemLat1.run(new InsnIterator(insns));
         assertEquals(1, sim_FullBypass_MemLat1.getInsns());
         // 123456789abcdef
         // fdxmw|
@@ -109,7 +109,7 @@ public class InorderPipelineSampleTest {
         for (int i = 0; i < COUNT; i++) {
             insns.add(makeInsn(-1, 1, 2, MemoryOp.Store)); // no load-use dependencies
         }
-        sim.run(insns);
+        sim.run(new InsnIterator(insns));
         assertEquals(COUNT, sim.getInsns());
         assertEquals(5 + COUNT, sim.getCycles());
     }
@@ -121,7 +121,7 @@ public class InorderPipelineSampleTest {
         for (int i = 0; i < COUNT; i++) {
             insns.add(makeInsn(-1, 1, 2, MemoryOp.Store)); // no load-use dependencies
         }
-        sim_FullBypass_MemLat1.run(insns);
+        sim_FullBypass_MemLat1.run(new InsnIterator(insns));
         assertEquals(COUNT, sim_FullBypass_MemLat1.getInsns());
         assertEquals(5 + 2*COUNT, sim_FullBypass_MemLat1.getCycles());
     }
@@ -131,7 +131,7 @@ public class InorderPipelineSampleTest {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
         insns.add(makeInsn(5, 3, 4, null)); // load to src reg 1
-        sim.run(insns);
+        sim.run(new InsnIterator(insns));
         assertEquals(2, sim.getInsns());
         // 123456789abcdef
         // fdxmw  |
@@ -144,7 +144,7 @@ public class InorderPipelineSampleTest {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
         insns.add(makeInsn(5, 4, 3, null)); // load to src reg 2
-        sim.run(insns);
+        sim.run(new InsnIterator(insns));
         assertEquals(2, sim.getInsns());
         // 123456789abcdef
         // fdxmw  |
@@ -157,7 +157,7 @@ public class InorderPipelineSampleTest {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
         insns.add(makeInsn(-1, 4, 3, MemoryOp.Store)); // load to src reg 2 (store address), so we stall
-        sim.run(insns);
+        sim.run(new InsnIterator(insns));
         assertEquals(2, sim.getInsns());
         // 123456789abc
         // fdxmw  |
@@ -171,7 +171,7 @@ public class InorderPipelineSampleTest {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
         insns.add(makeInsn(-1, 3, 4, MemoryOp.Store)); // load to src reg 1 (store value), so no stall
-        sim.run(insns);
+        sim.run(new InsnIterator(insns));
         assertEquals(2, sim.getInsns());
         // 123456789abcdef
         // fdxmw |
@@ -189,7 +189,7 @@ public class InorderPipelineSampleTest {
 
         sim = new InorderPipeline(0/*no add'l memory latency*/, EnumSet.of(MX));
 
-        sim.run(insns);
+        sim.run(new InsnIterator(insns));
         assertEquals(3, sim.getInsns());
         // 123456789a
         // fdxmw  |
@@ -207,7 +207,7 @@ public class InorderPipelineSampleTest {
 
         sim = new InorderPipeline(0/*no add'l memory latency*/, EnumSet.of(MX));
 
-        sim.run(insns);
+        sim.run(new InsnIterator(insns));
         assertEquals(3, sim.getInsns());
         // 123456789a
         // fdxmw  |
@@ -223,7 +223,7 @@ public class InorderPipelineSampleTest {
         insns.add(makeInsn(-1, 3, 4, MemoryOp.Store)); // load to store value
 
         InorderPipeline sim_NoBypass_MemLat0 = new InorderPipeline(0, Bypass.NO_BYPASS);
-        sim_NoBypass_MemLat0.run(insns);
+        sim_NoBypass_MemLat0.run(new InsnIterator(insns));
         assertEquals(2, sim_NoBypass_MemLat0.getInsns());
         // 123456789abcdef
         // fdxmw  |
@@ -238,7 +238,7 @@ public class InorderPipelineSampleTest {
         insns.add(makeInsn(-1, 3, 4, MemoryOp.Store)); // load to store value
 
         InorderPipeline sim_WXBypass_MemLat0 = new InorderPipeline(0, EnumSet.of(Bypass.WX));
-        sim_WXBypass_MemLat0.run(insns);
+        sim_WXBypass_MemLat0.run(new InsnIterator(insns));
         assertEquals(2, sim_WXBypass_MemLat0.getInsns());
         // 123456789abcdef
         // fdxmw  |
@@ -253,7 +253,7 @@ public class InorderPipelineSampleTest {
         insns.add(makeInsn(-1, 3, 4, MemoryOp.Store)); // load to store value
 
         InorderPipeline sim_WMBypass_MemLat0 = new InorderPipeline(0, EnumSet.of(Bypass.WM));
-        sim_WMBypass_MemLat0.run(insns);
+        sim_WMBypass_MemLat0.run(new InsnIterator(insns));
         assertEquals(2, sim_WMBypass_MemLat0.getInsns());
         // 123456789abcdef
         // fdxmw|
@@ -269,7 +269,7 @@ public class InorderPipelineSampleTest {
         insns.add(makeInsn(-1, 3, 4, MemoryOp.Store)); // load to store value
 
         InorderPipeline sim_NoBypass_MemLat2 = new InorderPipeline(2, Bypass.NO_BYPASS);
-        sim_NoBypass_MemLat2.run(insns);
+        sim_NoBypass_MemLat2.run(new InsnIterator(insns));
         assertEquals(3, sim_NoBypass_MemLat2.getInsns());
         // 123456789abcdef
         // fdxm..w     |
@@ -286,7 +286,7 @@ public class InorderPipelineSampleTest {
         insns.add(makeInsn(-1, 3, 4, MemoryOp.Store)); // load to store value
 
         InorderPipeline sim_NoBypass_MemLat2 = new InorderPipeline(2, Bypass.NO_BYPASS);
-        sim_NoBypass_MemLat2.run(insns);
+        sim_NoBypass_MemLat2.run(new InsnIterator(insns));
         assertEquals(3, sim_NoBypass_MemLat2.getInsns());
         // 123456789abcdef
         // fdxm..w     |
@@ -302,7 +302,7 @@ public class InorderPipelineSampleTest {
         insns.add(makeInsn(-1, 3, 4, MemoryOp.Store)); // load to store value
 
         InorderPipeline sim_WMBypass_MemLat2 = new InorderPipeline(2, EnumSet.of(Bypass.WM));
-        sim_WMBypass_MemLat2.run(insns);
+        sim_WMBypass_MemLat2.run(new InsnIterator(insns));
         assertEquals(3, sim_WMBypass_MemLat2.getInsns());
         // 123456789abcdef
         // fdxm..w   |
@@ -318,7 +318,7 @@ public class InorderPipelineSampleTest {
         insns.add(makeInsn(-1, 4, 3, MemoryOp.Store)); // load to store addr
 
         InorderPipeline sim_WMBypass_MemLat2 = new InorderPipeline(2, EnumSet.of(Bypass.WM));
-        sim_WMBypass_MemLat2.run(insns);
+        sim_WMBypass_MemLat2.run(new InsnIterator(insns));
         assertEquals(3, sim_WMBypass_MemLat2.getInsns());
         // 123456789abcdef
         // fdxm..w     |
@@ -334,7 +334,7 @@ public class InorderPipelineSampleTest {
         insns.add(makeInsn(-1, 4, 3, MemoryOp.Store)); // load to store addr
 
         InorderPipeline sim_WXBypass_MemLat2 = new InorderPipeline(2, EnumSet.of(Bypass.WX));
-        sim_WXBypass_MemLat2.run(insns);
+        sim_WXBypass_MemLat2.run(new InsnIterator(insns));
         assertEquals(3, sim_WXBypass_MemLat2.getInsns());
         // 123456789abcdef
         // fdxm..w    |
@@ -350,7 +350,7 @@ public class InorderPipelineSampleTest {
         * ldr r3, [sp, #0x2c]       F D X M W
         * ldr.w r0, [lr, r0, lsl #2]  F D . X M W
         * */
-        sim_NoBypass_MemLat0.run(wX_Dependency_Insns);
+        sim_NoBypass_MemLat0.run(new InsnIterator(wX_Dependency_Insns));
         assertEquals(3, sim_NoBypass_MemLat0.getInsns());
         assertEquals(9, sim_NoBypass_MemLat0.getCycles());
     }
@@ -363,7 +363,7 @@ public class InorderPipelineSampleTest {
         * ldr r3, [sp, #0x2c]       F D X M W
         * ldr.w r0, [lr, r0, lsl #2]  F D X M W
         * */
-        sim_WXBypass_MemLat0.run(wX_Dependency_Insns);
+        sim_WXBypass_MemLat0.run(new InsnIterator(wX_Dependency_Insns));
         assertEquals(3, sim_WXBypass_MemLat0.getInsns());
         assertEquals(8, sim_WXBypass_MemLat0.getCycles());
     }
@@ -376,7 +376,7 @@ public class InorderPipelineSampleTest {
         * ldr r3, [sp, #0x2c]       F D X M W
         * ldr.w r0, [lr, r0, lsl #2]  F D . X M W
         * */
-        sim_MXWMBypass_MemLat0.run(wX_Dependency_Insns);
+        sim_MXWMBypass_MemLat0.run(new InsnIterator(wX_Dependency_Insns));
         assertEquals(3, sim_MXWMBypass_MemLat0.getInsns());
         assertEquals(9, sim_MXWMBypass_MemLat0.getCycles());
     }
@@ -389,7 +389,7 @@ public class InorderPipelineSampleTest {
         * ldr r3, [sp, #0x2c]       F D X M . . W
         * ldr.w r0, [lr, r0, lsl #2]  F D . X . M . . W
         * */
-        sim_NoBypass_MemLat2.run(wX_Dependency_Insns);
+        sim_NoBypass_MemLat2.run(new InsnIterator(wX_Dependency_Insns));
         assertEquals(3, sim_NoBypass_MemLat2.getInsns());
         assertEquals(12, sim_NoBypass_MemLat2.getCycles());
     }
@@ -402,7 +402,7 @@ public class InorderPipelineSampleTest {
         * ldr r3, [sp, #0x2c]       F D X M . . W
         * ldr.w r0, [lr, r0, lsl #2]  F D X . . M . . W
         * */
-        sim_FullBypass_MemLat2.run(wX_Dependency_Insns);
+        sim_FullBypass_MemLat2.run(new InsnIterator(wX_Dependency_Insns));
         assertEquals(3, sim_FullBypass_MemLat2.getInsns());
         assertEquals(12, sim_FullBypass_MemLat2.getCycles());
     }
@@ -414,7 +414,7 @@ public class InorderPipelineSampleTest {
         * add r1<-r2,r3     F D X M W
         * str val,[r1]        F D . . X M W  (store-address is dependent)
         * */
-        sim_NoBypass_MemLat0.run(mX_Dependency_StoreAddr_Insns);
+        sim_NoBypass_MemLat0.run(new InsnIterator(mX_Dependency_StoreAddr_Insns));
         assertEquals(2, sim_NoBypass_MemLat0.getInsns());
         assertEquals(9, sim_NoBypass_MemLat0.getCycles());
     }
@@ -426,7 +426,7 @@ public class InorderPipelineSampleTest {
         * add r1<-r2,r3     F D X M W
         * str val,[r1]        F D . X M W  (store-address is dependent)
         * */
-        sim_WXBypass_MemLat0.run(mX_Dependency_StoreAddr_Insns);
+        sim_WXBypass_MemLat0.run(new InsnIterator(mX_Dependency_StoreAddr_Insns));
         assertEquals(2, sim_WXBypass_MemLat0.getInsns());
         assertEquals(8, sim_WXBypass_MemLat0.getCycles());
     }
@@ -438,7 +438,7 @@ public class InorderPipelineSampleTest {
         * add r1<-r2,r3     F D X M W
         * str val,[r1]        F D X M W  (store-address is dependent)
         * */
-        sim_MXBypass_MemLat0.run(mX_Dependency_StoreAddr_Insns);
+        sim_MXBypass_MemLat0.run(new InsnIterator(mX_Dependency_StoreAddr_Insns));
         assertEquals(2, sim_MXBypass_MemLat0.getInsns());
         assertEquals(7, sim_MXBypass_MemLat0.getCycles());
     }
@@ -450,7 +450,7 @@ public class InorderPipelineSampleTest {
         * add r1<-r2,r3     F D X M W
         * str val,[r1]        F D . . X M W  (store-address is dependent)
         * */
-        sim_WMBypass_MemLat0.run(mX_Dependency_StoreAddr_Insns);
+        sim_WMBypass_MemLat0.run(new InsnIterator(mX_Dependency_StoreAddr_Insns));
         assertEquals(2, sim_WMBypass_MemLat0.getInsns());
         assertEquals(9, sim_WMBypass_MemLat0.getCycles());
     }
@@ -462,7 +462,7 @@ public class InorderPipelineSampleTest {
         * add r1<-r2,r3     F D X M W
         * str addr,[r1]       F D X M W  (store-val is dependent)
         * */
-        sim_MXBypass_MemLat0.run(wM_Dependency_StoreVal_Insns);
+        sim_MXBypass_MemLat0.run(new InsnIterator(wM_Dependency_StoreVal_Insns));
         assertEquals(2, sim_MXBypass_MemLat0.getInsns());
         assertEquals(7, sim_MXBypass_MemLat0.getCycles());
     }
@@ -474,7 +474,7 @@ public class InorderPipelineSampleTest {
         * add r1<-r2,r3     F D X M W
         * str addr,[r1]       F D X M W  (store-val is dependent)
         * */
-        sim_WMBypass_MemLat0.run(wM_Dependency_StoreVal_Insns);
+        sim_WMBypass_MemLat0.run(new InsnIterator(wM_Dependency_StoreVal_Insns));
         assertEquals(2, sim_WMBypass_MemLat0.getInsns());
         assertEquals(7, sim_WMBypass_MemLat0.getCycles());
     }
@@ -486,7 +486,7 @@ public class InorderPipelineSampleTest {
         * add r1<-r2,r3     F D X M W
         * str addr,[r1]       F D . X M W  (store-val is dependent)
         * */
-        sim_WXBypass_MemLat0.run(wM_Dependency_StoreVal_Insns);
+        sim_WXBypass_MemLat0.run(new InsnIterator(wM_Dependency_StoreVal_Insns));
         assertEquals(2, sim_WXBypass_MemLat0.getInsns());
         assertEquals(8, sim_WXBypass_MemLat0.getCycles());
     }
@@ -497,7 +497,7 @@ public class InorderPipelineSampleTest {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(1, 2, 4, MemoryOp.Load));
         insns.add(makeInsn(-1, 1, 4, MemoryOp.Store));
-        simFile.run(insns);
+        simFile.run(new InsnIterator(insns));
         assertEquals(9, simFile.getCycles());
         assertEquals(2, simFile.getInsns());
         /*
@@ -513,7 +513,7 @@ public class InorderPipelineSampleTest {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(1, 2, 4, MemoryOp.Load));
         insns.add(makeInsn(-1, 1, 4, MemoryOp.Store));
-        simFile.run(insns);
+        simFile.run(new InsnIterator(insns));
         assertEquals(8, simFile.getCycles());
         assertEquals(2, simFile.getInsns());
         /*
@@ -529,7 +529,7 @@ public class InorderPipelineSampleTest {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(1, 2, 4, MemoryOp.Load));
         insns.add(makeInsn(-1, 1, 4, MemoryOp.Store));
-        simFile.run(insns);
+        simFile.run(new InsnIterator(insns));
         assertEquals(12, simFile.getCycles());
         assertEquals(2, simFile.getInsns());
         /*
@@ -545,7 +545,7 @@ public class InorderPipelineSampleTest {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(1, 2, 4, MemoryOp.Load));
         insns.add(makeInsn(-1, 1, 4, MemoryOp.Store));
-        simFile.run(insns);
+        simFile.run(new InsnIterator(insns));
         assertEquals(13, simFile.getCycles());
         assertEquals(2, simFile.getInsns());
         /*
@@ -561,7 +561,7 @@ public class InorderPipelineSampleTest {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(0, 1, 0, MemoryOp.Load));
         insns.add(makeInsn(-1, 1, 0, MemoryOp.Store));
-        simFile.run(insns);
+        simFile.run(new InsnIterator(insns));
         assertEquals(9, simFile.getCycles());
         assertEquals(2, simFile.getInsns());
         /*
@@ -576,7 +576,7 @@ public class InorderPipelineSampleTest {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(0, 1, 0, MemoryOp.Load));
         insns.add(makeInsn(-1, 1, 0, MemoryOp.Store));
-        simFile.run(insns);
+        simFile.run(new InsnIterator(insns));
         assertEquals(9, simFile.getCycles());
         assertEquals(2, simFile.getInsns());
         /*
@@ -591,7 +591,7 @@ public class InorderPipelineSampleTest {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(0, 1, 0, MemoryOp.Load));
         insns.add(makeInsn(-1, 1, 0, MemoryOp.Store));
-        simFile.run(insns);
+        simFile.run(new InsnIterator(insns));
         assertEquals(8, simFile.getCycles());
         assertEquals(2, simFile.getInsns());
         /*
