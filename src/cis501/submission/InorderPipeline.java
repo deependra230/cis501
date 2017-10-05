@@ -58,7 +58,7 @@ public class InorderPipeline implements IInorderPipeline {
     }
 
     @Override
-    public void run(Iterable<Insn> ii) {
+    public void run(InsnIterator ii) {
 
     }
 

@@ -53,7 +53,7 @@ public class InorderPipelineFullTest {
         public void test1Insn() {
             List<Insn> insns = new LinkedList<>();
             insns.add(makeInsn(3, 1, 2, null));
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG, 1, sim.getInsns());
             // 123456
             // fdxmw|
@@ -67,7 +67,7 @@ public class InorderPipelineFullTest {
             for (int i = 0; i < COUNT; i++) {
                 insns.add(makeInsn(3, 1, 2, null));
             }
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG, COUNT, sim.getInsns());
             assertEquals(MSG, 5 + COUNT, sim.getCycles());
         }
@@ -76,7 +76,7 @@ public class InorderPipelineFullTest {
         public void test1MemInsn() {
             List<Insn> insns = new LinkedList<>();
             insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG, 1, sim.getInsns());
             // 123456789abcdef
             // fdxmmmmw|
@@ -90,7 +90,7 @@ public class InorderPipelineFullTest {
             for (int i = 0; i < COUNT; i++) {
                 insns.add(makeInsn(3, 1, 2, MemoryOp.Store)); // no load-use dependencies
             }
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG, COUNT, sim.getInsns());
             // 123456789abcdefghi
             // fdxmmmmw        |
@@ -104,7 +104,7 @@ public class InorderPipelineFullTest {
             List<Insn> insns = new LinkedList<>();
             insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
             insns.add(makeInsn(5, 3, 4, null)); // load to src reg 1
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG, 2, sim.getInsns());
             // 123456789abcdef
             // fdxmmmmw  |
@@ -117,7 +117,7 @@ public class InorderPipelineFullTest {
             List<Insn> insns = new LinkedList<>();
             insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
             insns.add(makeInsn(5, 4, 3, null)); // load to src reg 2
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG, 2, sim.getInsns());
             // 123456789abcdef
             // fdxmmmmw  |
@@ -130,7 +130,7 @@ public class InorderPipelineFullTest {
             List<Insn> insns = new LinkedList<>();
             insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
             insns.add(makeInsn(5, 4, 3, MemoryOp.Store)); // load to src reg 2 (store address), so we stall
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG, 2, sim.getInsns());
             // 123456789abcdef
             // fdxmmmmw     |
@@ -144,7 +144,7 @@ public class InorderPipelineFullTest {
             List<Insn> insns = new LinkedList<>();
             insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
             insns.add(makeInsn(5, 3, 4, MemoryOp.Store)); // load to src reg 1 (store value), so no stall
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG, 2, sim.getInsns());
             // 123456789abcdef
             // fdxmmmmw    |
@@ -159,7 +159,7 @@ public class InorderPipelineFullTest {
             insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
             insns.add(makeInsn(5, 4, 3, MemoryOp.Store)); // load to src reg 2 (store address), so we stall
             insns.add(makeInsn(8, 6, 7, null)); // independent insn
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG, 3, sim.getInsns());
             // 123456789abcdef
             // fdxmmmmw      |
@@ -175,7 +175,7 @@ public class InorderPipelineFullTest {
             insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
             insns.add(makeInsn(5, 3, 4, MemoryOp.Store)); // load to src reg 1 (store value), so no stall
             insns.add(makeInsn(8, 6, 7, null)); // independent insn
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG, 3, sim.getInsns());
             // 123456789abcdef
             // fdxmmmmw     |
@@ -233,7 +233,7 @@ public class InorderPipelineFullTest {
 
             init(EnumSet.of(MX, WX));
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 2, sim.getInsns());
             // 123456789a
             // fdxmw |
@@ -250,7 +250,7 @@ public class InorderPipelineFullTest {
 
             init(EnumSet.of(MX, WX));
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 2, sim.getInsns());
             // 123456789a
             // fdxmw |
@@ -267,7 +267,7 @@ public class InorderPipelineFullTest {
 
             init(EnumSet.of(MX));
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 2, sim.getInsns());
             // 123456789a
             // fdxmw |
@@ -284,7 +284,7 @@ public class InorderPipelineFullTest {
 
             init(EnumSet.of(MX));
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 2, sim.getInsns());
             // 123456789a
             // fdxmw |
@@ -301,7 +301,7 @@ public class InorderPipelineFullTest {
 
             init(EnumSet.of(WX));
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 2, sim.getInsns());
             // 123456789a
             // fdxmw  |
@@ -318,7 +318,7 @@ public class InorderPipelineFullTest {
 
             init(EnumSet.of(WX));
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 2, sim.getInsns());
             // 123456789a
             // fdxmw  |
@@ -335,7 +335,7 @@ public class InorderPipelineFullTest {
 
             init(NO_BYPASS);
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 2, sim.getInsns());
             // 123456789a
             // fdxmw   |
@@ -352,7 +352,7 @@ public class InorderPipelineFullTest {
 
             init(NO_BYPASS);
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 2, sim.getInsns());
             // 123456789a
             // fdxmw   |
@@ -370,7 +370,7 @@ public class InorderPipelineFullTest {
 
             init(EnumSet.of(MX));
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 3, sim.getInsns());
             // 123456789a
             // fdxmw  |
@@ -389,7 +389,7 @@ public class InorderPipelineFullTest {
 
             init(EnumSet.of(MX, WX));
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 3, sim.getInsns());
             // 123456789a
             // fdxmw  |
@@ -408,7 +408,7 @@ public class InorderPipelineFullTest {
 
             init(EnumSet.of(WX));
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 3, sim.getInsns());
             // 123456789a
             // fdxmw   |
@@ -427,7 +427,7 @@ public class InorderPipelineFullTest {
 
             init(NO_BYPASS);
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 3, sim.getInsns());
             // 123456789a
             // fdxmw    |
@@ -446,7 +446,7 @@ public class InorderPipelineFullTest {
 
             init(EnumSet.of(MX));
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 3, sim.getInsns());
             // 123456789a
             // fdxmw  |
@@ -465,7 +465,7 @@ public class InorderPipelineFullTest {
 
             init(EnumSet.of(MX, WX));
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 3, sim.getInsns());
             // 123456789a
             // fdxmw  |
@@ -484,7 +484,7 @@ public class InorderPipelineFullTest {
 
             init(EnumSet.of(WX));
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 3, sim.getInsns());
             // 123456789a
             // fdxmw   |
@@ -503,7 +503,7 @@ public class InorderPipelineFullTest {
 
             init(NO_BYPASS);
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 3, sim.getInsns());
             // 123456789a
             // fdxmw    |
@@ -522,7 +522,7 @@ public class InorderPipelineFullTest {
 
             init(EnumSet.of(MX));
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 3, sim.getInsns());
             // 123456789a
             // fdxmw    |
@@ -541,7 +541,7 @@ public class InorderPipelineFullTest {
 
             init(EnumSet.of(MX, WX));
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 3, sim.getInsns());
             // 123456789a
             // fdxmw  |
@@ -560,7 +560,7 @@ public class InorderPipelineFullTest {
 
             init(EnumSet.of(WX));
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 3, sim.getInsns());
             // 123456789a
             // fdxmw   |
@@ -622,7 +622,7 @@ public class InorderPipelineFullTest {
 
             init(EnumSet.of(WX));
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 3, sim.getInsns());
             // 123456789a
             // fdxmw  |
@@ -641,7 +641,7 @@ public class InorderPipelineFullTest {
 
             init(NO_BYPASS);
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 3, sim.getInsns());
             // 123456789a
             // fdxmw   |
@@ -659,7 +659,7 @@ public class InorderPipelineFullTest {
 
             init(NO_BYPASS);
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 2, sim.getInsns());
             // 123456789a
             // fdxmw   |
@@ -676,7 +676,7 @@ public class InorderPipelineFullTest {
 
             init(NO_BYPASS);
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 2, sim.getInsns());
             // 123456789a
             // fdxmw   |
@@ -693,7 +693,7 @@ public class InorderPipelineFullTest {
 
             init(EnumSet.of(WX));
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 2, sim.getInsns());
             // 123456789a
             // fdxmw  |
@@ -710,7 +710,7 @@ public class InorderPipelineFullTest {
 
             init(EnumSet.of(WX));
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 2, sim.getInsns());
             // 123456789a
             // fdxmw  |
@@ -766,7 +766,7 @@ public class InorderPipelineFullTest {
 
             init(EnumSet.of(WM));
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 2, sim.getInsns());
             // 123456789a
             // fdxmw |
@@ -783,7 +783,7 @@ public class InorderPipelineFullTest {
 
             init(EnumSet.of(WM, WX));
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 2, sim.getInsns());
             // 123456789a
             // fdxmw |
@@ -800,7 +800,7 @@ public class InorderPipelineFullTest {
 
             init(EnumSet.of(WX));
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 2, sim.getInsns());
             // 123456789a
             // fdxmw  |
@@ -822,7 +822,7 @@ public class InorderPipelineFullTest {
 
             init(NO_BYPASS);
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 2, sim.getInsns());
             // 123456789a
             // fdxmw   |
@@ -873,7 +873,7 @@ public class InorderPipelineFullTest {
             insns.add(makeInsn(3, 1, 2, null));
             insns.add(makeInsn(-1, 3, 4, MemoryOp.Store)); // dep. to store value
 
-            sim.run(insns);
+            sim.run(new InsnIterator(insns));
             assertEquals(MSG + TestUtils.i2s(insns), 2, sim.getInsns());
             // 123456789a
             // fdxmw |

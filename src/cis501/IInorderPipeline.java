@@ -10,7 +10,7 @@ public interface IInorderPipeline {
      * Run the pipeline simulation over the given sequence of insns. The simulation should stop as
      * soon as the last insn exits the pipeline.
      */
-    public void run(Iterable<Insn> iiter);
+    public void run(InsnIterator iiter);
 
     /** @return the number of insns executed so far */
     public long getInsns();

@@ -1,9 +1,6 @@
 package cis501.submission;
 
-import cis501.Bypass;
-import cis501.IInorderPipeline;
-import cis501.Insn;
-import cis501.MemoryOp;
+import cis501.*;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -36,7 +33,7 @@ public class InorderPipelineSampleTest {
     public void test1Uop() {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, null));
-        sim.run(insns);
+        sim.run(new InsnIterator(insns));
         assertEquals(1, sim.getInsns());
         // 12345678
         // fdxmw|
@@ -50,7 +47,7 @@ public class InorderPipelineSampleTest {
         for (int i = 0; i < COUNT; i++) {
             insns.add(makeInsn(3, 1, 2, null));
         }
-        sim.run(insns);
+        sim.run(new InsnIterator(insns));
         assertEquals(COUNT, sim.getInsns());
         assertEquals(5 + COUNT, sim.getCycles());
     }
@@ -59,7 +56,7 @@ public class InorderPipelineSampleTest {
     public void test1MemUop() {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
-        sim.run(insns);
+        sim.run(new InsnIterator(insns));
         assertEquals(1, sim.getInsns());
         // 123456789abcdef
         // fdxmw|
@@ -73,7 +70,7 @@ public class InorderPipelineSampleTest {
         for (int i = 0; i < COUNT; i++) {
             insns.add(makeInsn(-1, 1, 2, MemoryOp.Store)); // no load-use dependencies
         }
-        sim.run(insns);
+        sim.run(new InsnIterator(insns));
         assertEquals(COUNT, sim.getInsns());
         assertEquals(5 + COUNT, sim.getCycles());
     }
@@ -83,7 +80,7 @@ public class InorderPipelineSampleTest {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
         insns.add(makeInsn(5, 3, 4, null)); // load to src reg 1
-        sim.run(insns);
+        sim.run(new InsnIterator(insns));
         assertEquals(2, sim.getInsns());
         // 123456789abcdef
         // fdxmw  |
@@ -96,7 +93,7 @@ public class InorderPipelineSampleTest {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
         insns.add(makeInsn(5, 4, 3, null)); // load to src reg 2
-        sim.run(insns);
+        sim.run(new InsnIterator(insns));
         assertEquals(2, sim.getInsns());
         // 123456789abcdef
         // fdxmw  |
@@ -109,7 +106,7 @@ public class InorderPipelineSampleTest {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
         insns.add(makeInsn(-1, 4, 3, MemoryOp.Store)); // load to src reg 2 (store address), so we stall
-        sim.run(insns);
+        sim.run(new InsnIterator(insns));
         assertEquals(2, sim.getInsns());
         // 123456789abc
         // fdxmw  |
@@ -123,7 +120,7 @@ public class InorderPipelineSampleTest {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
         insns.add(makeInsn(-1, 3, 4, MemoryOp.Store)); // load to src reg 1 (store value), so no stall
-        sim.run(insns);
+        sim.run(new InsnIterator(insns));
         assertEquals(2, sim.getInsns());
         // 123456789abcdef
         // fdxmw |
@@ -141,7 +138,7 @@ public class InorderPipelineSampleTest {
 
         sim = new InorderPipeline(0/*no add'l memory latency*/, EnumSet.of(MX));
 
-        sim.run(insns);
+        sim.run(new InsnIterator(insns));
         assertEquals(3, sim.getInsns());
         // 123456789a
         // fdxmw  |
@@ -159,7 +156,7 @@ public class InorderPipelineSampleTest {
 
         sim = new InorderPipeline(0/*no add'l memory latency*/, EnumSet.of(MX));
 
-        sim.run(insns);
+        sim.run(new InsnIterator(insns));
         assertEquals(3, sim.getInsns());
         // 123456789a
         // fdxmw  |
