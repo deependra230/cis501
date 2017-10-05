@@ -64,6 +64,7 @@ public class InsnIterator implements Iterator<Insn>, Iterable<Insn> {
             throw new IllegalStateException("Interrupted!");
         }
         try {
+            insnsProcessed++;
             if (!pbBuffer.isEmpty()) {
                 return pbBuffer.pop();
             }
@@ -71,7 +72,6 @@ public class InsnIterator implements Iterator<Insn>, Iterable<Insn> {
                 return list.remove(0);
             }
             String ln = reader.readLine();
-            insnsProcessed++;
             return new Insn(ln);
         } catch (IOException e) {
             e.printStackTrace();
