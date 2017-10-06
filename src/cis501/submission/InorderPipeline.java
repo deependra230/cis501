@@ -35,6 +35,8 @@ public class InorderPipeline implements IInorderPipeline {
     private final BranchPredictor branchPredictor;
 
     private List<Insn> pipeline;
+    private Insn lastFetchedInsn;
+
     private long numInsns;
     private long numCycles;
 
@@ -55,6 +57,8 @@ public class InorderPipeline implements IInorderPipeline {
 
         this.pipeline = new ArrayList<>(Stage.values().length);
         initializePipeline(); // all stages set to null
+        this.lastFetchedInsn = null;
+
         this.numInsns = 0;
         this.numCycles = 0;
     }
@@ -73,6 +77,8 @@ public class InorderPipeline implements IInorderPipeline {
 
         this.pipeline = new ArrayList<>(Stage.values().length);
         initializePipeline(); // all stages set to null
+        this.lastFetchedInsn = null;
+
         this.numInsns = 0;
         this.numCycles = 0;
     }
@@ -89,7 +95,6 @@ public class InorderPipeline implements IInorderPipeline {
         /* In order to simulate the branch-predictor, we keep track of the last-fetched-PC
         * and the PC of the insns in F, D that would have been there if the branch-prediction
         * was happening in real-time. Remember that our trace file has all the correctly predicted branches.*/
-        Insn lastFetchedInsn = null;
         List<Pair<Long, Long>> branchPredictorPCs = new ArrayList<>(2);
         branchPredictorPCs.add(null);
         branchPredictorPCs.add(null);
@@ -101,8 +106,8 @@ public class InorderPipeline implements IInorderPipeline {
                 pipeline.set(Stage.FETCH.i(), ii.next());
                 numInsns += 1;
 
-            //simulate branch predictor
-                if (lastFetchedInsn != null) {
+                //simulate branch predictor
+                if (branchPredictor != null && lastFetchedInsn != null) {
                     // Note that we are only simulating the branch prediction, otherwise we should have put last
                     // predicted insn's fall-through-pc here
                     long predictedPC = branchPredictor.predict(lastFetchedInsn.pc, lastFetchedInsn.fallthroughPC());
@@ -153,7 +158,7 @@ public class InorderPipeline implements IInorderPipeline {
 
             // If there is an insn in X, we handle the branch prediction accordingly.
             if (hasInsn(Stage.EXECUTE)) {
-                handleBranchPrediction(branchPredictorPCs);
+                handleBranchPrediction(branchPredictorPCs, ii);
             }
 
             // Filling up the pipeline before the M stage if some stages are empty
@@ -209,7 +214,7 @@ public class InorderPipeline implements IInorderPipeline {
         /*Stalls despite all bypasses*/
         isStallRequired = handleNoBypassDisabled();
         if (isStallRequired) {
-            handleBranchPrediction(branchPredictorPCs);
+            handleBranchPrediction(branchPredictorPCs, ii);
             moveInsnToNextStage(Stage.EXECUTE);
             return remainingMemLatency;
         }
@@ -236,7 +241,7 @@ public class InorderPipeline implements IInorderPipeline {
 
         //All Stalls handled, now advancing rest of the insns:
         if (hasInsn(Stage.EXECUTE)) {
-            handleBranchPrediction(branchPredictorPCs);
+            handleBranchPrediction(branchPredictorPCs, ii);
             moveInsnToNextStage(Stage.EXECUTE);
         }
 
@@ -265,11 +270,19 @@ public class InorderPipeline implements IInorderPipeline {
     }
 
     private void updateBranchPredictionPCs(List<Pair<Long, Long>> branchPredictorPCs){
+        if (branchPredictor == null) {
+            return;
+        }
+
         branchPredictorPCs.set(1, branchPredictorPCs.get(0));
         branchPredictorPCs.set(0, null);
     }
 
     private void updateBranchPredictionPCs(List<Pair<Long, Long>> branchPredictorPCs, Stage stage){
+        if (branchPredictor == null) {
+            return;
+        }
+
         if (stage == Stage.DECODE) {
             branchPredictorPCs.set(1, null);
         } else {
@@ -446,30 +459,45 @@ public class InorderPipeline implements IInorderPipeline {
         return stallRequired;
     }
 
-    private void handleBranchPrediction(List<Pair<Long, Long>> branchPredictorPCs) {
+    private void handleBranchPrediction(List<Pair<Long, Long>> branchPredictorPCs, InsnIterator ii) {
+        if (branchPredictor == null) {
+            return;
+        }
+
         Insn xInsn = pipeline.get(Stage.EXECUTE.i());
         long predictedAddress = branchPredictorPCs.get(1).getValue();
+
         if (xInsn.branchType != null) {
             branchPredictor.train(xInsn.pc, xInsn.branchTarget, xInsn.branchDirection);
             if (xInsn.branchDirection == Direction.NotTaken) {
                 if (predictedAddress != xInsn.fallthroughPC()) {
-                    //flush
+                    branchPredictionFlush(ii);
                 }
             } else {
                 if (predictedAddress != xInsn.branchTarget) {
-                    //flush
+                    branchPredictionFlush(ii);
                 }
             }
         } else {
             if (predictedAddress != xInsn.fallthroughPC()) {
-                //flush
+                branchPredictionFlush(ii);
             }
         }
     }
 
-    private void branchPredictionFlush() {
+    private boolean branchPredictionFlush(InsnIterator ii) {
+        boolean flushed = false;
         if (hasInsn(Stage.FETCH)) {
-
+            ii.putBack(pipeline.get(Stage.FETCH.i()));
+            flushed = true;
         }
+        if (hasInsn(Stage.DECODE)) {
+            ii.putBack(pipeline.get(Stage.DECODE.i()));
+            flushed = true;
+        }
+        if (flushed) {
+            lastFetchedInsn = null;
+        }
+        return flushed;
     }
 }
