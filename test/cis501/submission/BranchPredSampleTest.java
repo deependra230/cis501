@@ -88,6 +88,22 @@ public class BranchPredSampleTest {
         assertEquals(Direction.NotTaken, gshare.predict(-1));
     }
 
+    @Test
+    public void testRemainderIndexingBtb() {
+        btb.train(-10, 1234);
+        assertEquals(1234, btb.predict(-10));
+    }
+
+    @Test
+    public void testRemainderIndexingTournament() {
+        tournament.train(-100, Direction.Taken); // -100 in binary: ......10011100
+        assertEquals(Direction.NotTaken, tournament.predict(-100));
+        assertEquals(Direction.NotTaken, tournament.predict(12));  // 12 in binary: 1100
+        tournament.train(-100, Direction.Taken);
+        assertEquals(Direction.Taken, tournament.predict(-100));
+        assertEquals(Direction.Taken, tournament.predict(12));
+    }
+
 
     @Test
     public void testBimodalTaken() {

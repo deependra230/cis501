@@ -93,8 +93,8 @@ public class InorderPipeline implements IInorderPipeline {
         int remainingMemLatency = 1 + additionalMemLatency;
 
         /* In order to simulate the branch-predictor, we keep track of the last-fetched-PC
-        * and the PC of the insns in F, D that would have been there if the branch-prediction
-        * was happening in real-time. Remember that our trace file has all the correctly predicted branches.*/
+        * and the PCs of the insns in F, D that would have been there if the branch-prediction
+        * was happening in real-time. */
         List<Pair<Long, Long>> branchPredictorPCs = new ArrayList<>(2);
         branchPredictorPCs.add(null);
         branchPredictorPCs.add(null);
@@ -108,8 +108,9 @@ public class InorderPipeline implements IInorderPipeline {
 
                 //simulate branch predictor
                 if (branchPredictor != null && lastFetchedInsn != null) {
-                    // Note that we are only simulating the branch prediction, otherwise we should have put last
-                    // predicted insn's fall-through-pc here
+                    // Note that we are only simulating the branch prediction, and hence we are putting the
+                    // last-correctly-fetched (because the trace is dynamic) insn's fall-through-pc instead of the
+                    // last-predicted-fetched insn's fall-through-pc.
                     long predictedPC = branchPredictor.predict(lastFetchedInsn.pc, lastFetchedInsn.fallthroughPC());
                     branchPredictorPCs.set(0, new Pair<>(lastFetchedInsn.pc, predictedPC));
                 }
@@ -144,7 +145,7 @@ public class InorderPipeline implements IInorderPipeline {
 
     private int advanceInsns(int remainingMemLatency, Set<Bypass> bypasses, List<Pair<Long, Long>> branchPredictorPCs,
                              InsnIterator ii) {
-        // Insn in the W stage will always progress
+        // Insn in the W stage will always flow
         pipeline.set(Stage.WRITEBACK.i(), null);
 
         /*
@@ -158,7 +159,7 @@ public class InorderPipeline implements IInorderPipeline {
 
             // If there is an insn in X, we handle the branch prediction accordingly.
             if (hasInsn(Stage.EXECUTE)) {
-                handleBranchPrediction(branchPredictorPCs, ii);
+                branchPredictionTrainingAndFlush(branchPredictorPCs, ii);
             }
 
             // Filling up the pipeline before the M stage if some stages are empty
@@ -168,25 +169,27 @@ public class InorderPipeline implements IInorderPipeline {
                 int src1 = pipeline.get(Stage.DECODE.i()).srcReg1;
                 int src2 = pipeline.get(Stage.DECODE.i()).srcReg2;
 
-                if ((dstReg == -1) || ((dstReg != src1)&&(dstReg != src2))) {
+                if ((dstReg == NO_REGISTER) || ((dstReg != src1)&&(dstReg != src2))) {
                     moveInsnToNextStage(Stage.DECODE);
+                    updateBranchPredictionPCs(branchPredictorPCs, Stage.DECODE);
                     moveInsnToNextStage(Stage.FETCH);
-                    updateBranchPredictionPCs(branchPredictorPCs);
+                    updateBranchPredictionPCs(branchPredictorPCs, Stage.FETCH);
 
                 } else if ((pipeline.get(Stage.DECODE.i()).mem == MemoryOp.Store)
                         && (dstReg == src1)
                         && (bypasses.contains(Bypass.WM))
                         ) {
                     moveInsnToNextStage(Stage.DECODE);
+                    updateBranchPredictionPCs(branchPredictorPCs, Stage.DECODE);
                     moveInsnToNextStage(Stage.FETCH);
-                    updateBranchPredictionPCs(branchPredictorPCs);
+                    updateBranchPredictionPCs(branchPredictorPCs, Stage.FETCH);
                 }
 
             }
 
-            if (!hasInsn(Stage.DECODE)) {
+            if (!hasInsn(Stage.DECODE) && hasInsn(Stage.FETCH)) {
                 moveInsnToNextStage(Stage.FETCH);
-                updateBranchPredictionPCs(branchPredictorPCs);
+                updateBranchPredictionPCs(branchPredictorPCs, Stage.FETCH);
             }
             return remainingMemLatency;
         }
@@ -194,7 +197,9 @@ public class InorderPipeline implements IInorderPipeline {
         boolean isStallRequired;
         /*
         * Bypass disabled order is very important. Since other bypass-disables have dependencies on WX,
-        * it should be the first.*/
+        * it should be the first.
+        * We do not update this case after the pipelining homework: will not be tested again.
+        * */
         if (!bypasses.contains(Bypass.WX)) {
             isStallRequired = handleWXBypassDisabled();
             if (isStallRequired) {
@@ -214,12 +219,13 @@ public class InorderPipeline implements IInorderPipeline {
         /*Stalls despite all bypasses*/
         isStallRequired = handleNoBypassDisabled();
         if (isStallRequired) {
-            handleBranchPrediction(branchPredictorPCs, ii);
+            //reaching here necessitates that stage X has an insn so no need to check before invoking misprediction check.
+            branchPredictionTrainingAndFlush(branchPredictorPCs, ii);
             moveInsnToNextStage(Stage.EXECUTE);
             return remainingMemLatency;
         }
 
-        /*MX Bypass disabled.*/
+        /*MX Bypass disabled. - we do not update this case after the pipelining homework: will not be tested again.*/
         if (!bypasses.contains(Bypass.MX)) {
             isStallRequired = handleMXBypassDisabled();
             if (isStallRequired) {
@@ -230,7 +236,8 @@ public class InorderPipeline implements IInorderPipeline {
 
         /* WM bypass disabled. Peculiar case of A->MSV has already been handled in MX: read the code of MX
         * for more details.
-        */
+        *  We do not update this case after the pipelining homework: will not be tested again.
+        *  */
         if (!bypasses.contains(Bypass.WM)) {
             isStallRequired = handleWMBypassDisabled();
             if (isStallRequired) {
@@ -241,18 +248,18 @@ public class InorderPipeline implements IInorderPipeline {
 
         //All Stalls handled, now advancing rest of the insns:
         if (hasInsn(Stage.EXECUTE)) {
-            handleBranchPrediction(branchPredictorPCs, ii);
+            branchPredictionTrainingAndFlush(branchPredictorPCs, ii);
             moveInsnToNextStage(Stage.EXECUTE);
         }
 
         if (hasInsn(Stage.DECODE)) {
-            updateBranchPredictionPCs(branchPredictorPCs, Stage.DECODE);
             moveInsnToNextStage(Stage.DECODE);
+            updateBranchPredictionPCs(branchPredictorPCs, Stage.DECODE);
         }
 
         if (hasInsn(Stage.FETCH)) {
-            updateBranchPredictionPCs(branchPredictorPCs, Stage.FETCH);
             moveInsnToNextStage(Stage.FETCH);
+            updateBranchPredictionPCs(branchPredictorPCs, Stage.FETCH);
         }
         return remainingMemLatency;
     }
@@ -269,15 +276,6 @@ public class InorderPipeline implements IInorderPipeline {
         pipeline.set(currentStage.i(), null);
     }
 
-    private void updateBranchPredictionPCs(List<Pair<Long, Long>> branchPredictorPCs){
-        if (branchPredictor == null) {
-            return;
-        }
-
-        branchPredictorPCs.set(1, branchPredictorPCs.get(0));
-        branchPredictorPCs.set(0, null);
-    }
-
     private void updateBranchPredictionPCs(List<Pair<Long, Long>> branchPredictorPCs, Stage stage){
         if (branchPredictor == null) {
             return;
@@ -286,7 +284,8 @@ public class InorderPipeline implements IInorderPipeline {
         if (stage == Stage.DECODE) {
             branchPredictorPCs.set(1, null);
         } else {
-            updateBranchPredictionPCs(branchPredictorPCs);
+            branchPredictorPCs.set(1, branchPredictorPCs.get(0));
+            branchPredictorPCs.set(0, null);
         }
     }
 
@@ -313,7 +312,7 @@ public class InorderPipeline implements IInorderPipeline {
         if (!hasInsn(Stage.EXECUTE) ||
                 !hasInsn(Stage.DECODE) ||
                 pipeline.get(Stage.EXECUTE.i()).mem != MemoryOp.Load ||
-                pipeline.get(Stage.EXECUTE.i()).dstReg == -1) {
+                pipeline.get(Stage.EXECUTE.i()).dstReg == NO_REGISTER) {
             return false;
         }
 
@@ -352,7 +351,7 @@ public class InorderPipeline implements IInorderPipeline {
         if (!hasInsn(Stage.EXECUTE) ||
                 !hasInsn(Stage.DECODE) ||
                 pipeline.get(Stage.EXECUTE.i()).mem != null ||
-                pipeline.get(Stage.EXECUTE.i()).dstReg == -1) {
+                pipeline.get(Stage.EXECUTE.i()).dstReg == NO_REGISTER) {
             return false;
         }
 
@@ -397,7 +396,7 @@ public class InorderPipeline implements IInorderPipeline {
     private boolean handleWXBypassDisabled() {
         if (!hasInsn(Stage.MEMORY) ||
                 !hasInsn(Stage.DECODE) ||
-                pipeline.get(Stage.MEMORY.i()).dstReg == -1) {
+                pipeline.get(Stage.MEMORY.i()).dstReg == NO_REGISTER) {
             return false;
         }
 
@@ -443,7 +442,7 @@ public class InorderPipeline implements IInorderPipeline {
         if (!hasInsn(Stage.EXECUTE) ||
                 !hasInsn(Stage.DECODE) ||
                 pipeline.get(Stage.EXECUTE.i()).mem != MemoryOp.Load ||
-                pipeline.get(Stage.EXECUTE.i()).dstReg == -1) {
+                pipeline.get(Stage.EXECUTE.i()).dstReg == NO_REGISTER) {
             return false;
         }
 
@@ -459,41 +458,66 @@ public class InorderPipeline implements IInorderPipeline {
         return stallRequired;
     }
 
-    private void handleBranchPrediction(List<Pair<Long, Long>> branchPredictorPCs, InsnIterator ii) {
+    /*
+    * If X has a branch insn, then train the predictor
+    * If D has an incorrect insn according the the resolution of insn in X, then invoke flush.
+    * */
+    private void branchPredictionTrainingAndFlush(List<Pair<Long, Long>> branchPredictorPCs, InsnIterator ii) {
         if (branchPredictor == null) {
+            return;
+        }
+
+        /* We did not fetch anything in the last-to-last cycle(based on the prediction I mean  ---we could have the good
+        * insn in fetch after flush, but then it makes no sense to do the branch prediction analysis)
+        *
+        * Or, we fetched the correct predicted insn in the last-to-last cycle and we checked already.
+        * */
+        if (branchPredictorPCs.get(1) == null) {
             return;
         }
 
         Insn xInsn = pipeline.get(Stage.EXECUTE.i());
         long predictedAddress = branchPredictorPCs.get(1).getValue();
+        long actualAddress = pipeline.get(Stage.DECODE.i()).pc;
 
         if (xInsn.branchType != null) {
             branchPredictor.train(xInsn.pc, xInsn.branchTarget, xInsn.branchDirection);
-            if (xInsn.branchDirection == Direction.NotTaken) {
-                if (predictedAddress != xInsn.fallthroughPC()) {
-                    branchPredictionFlush(ii);
-                }
-            } else {
-                if (predictedAddress != xInsn.branchTarget) {
-                    branchPredictionFlush(ii);
-                }
-            }
+        }
+
+        if (predictedAddress != actualAddress) {
+            // flush if incorrect prediction
+            branchMisPredictionFlush(branchPredictorPCs, ii);
         } else {
-            if (predictedAddress != xInsn.fallthroughPC()) {
-                branchPredictionFlush(ii);
-            }
+            /* if correct, set decode-predicted-pc to null to indicate that it has been checked
+            *   and no need to check in next cycle and therefore end up training again!
+            *   Think F, D, X (has a br insn), M (has a mem insn) are full and M insn is stuck there because of mem
+            *   latency and D has the correct insn (and therefore entire pipeline until M is stuck ),
+            *   and you end up training every cycle during this process.  That would be incorrect! Train only once
+            *   per branch.
+            *   */
+            branchPredictorPCs.set(1, null);
         }
     }
 
-    private boolean branchPredictionFlush(InsnIterator ii) {
+    /*
+    * If Fetch and Decode have insns then clearly they are not correct, so push them back on the iterator
+    * and decrement the count of insns processed.
+    * */
+    private boolean branchMisPredictionFlush(List<Pair<Long, Long>> branchPredictorPCs, InsnIterator ii) {
         boolean flushed = false;
         if (hasInsn(Stage.FETCH)) {
             ii.putBack(pipeline.get(Stage.FETCH.i()));
+            this.numInsns -= 1;
+            pipeline.set(Stage.FETCH.i(), null);
             flushed = true;
+            branchPredictorPCs.set(0, null);
         }
         if (hasInsn(Stage.DECODE)) {
             ii.putBack(pipeline.get(Stage.DECODE.i()));
+            this.numInsns -= 1;
+            pipeline.set(Stage.DECODE.i(), null);
             flushed = true;
+            branchPredictorPCs.set(1, null);
         }
         if (flushed) {
             lastFetchedInsn = null;
