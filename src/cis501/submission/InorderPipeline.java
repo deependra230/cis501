@@ -52,6 +52,10 @@ public class InorderPipeline implements IInorderPipeline {
     public InorderPipeline(int additionalMemLatency, BranchPredictor bp) {
     }
 
+    /** Cache homework ctor */
+    public InorderPipeline(BranchPredictor bp, ICache ic, ICache dc) {
+    }
+
     @Override
     public String[] groupMembers() {
         return new String[]{"your", "names"};
