@@ -83,6 +83,10 @@ public class InorderPipeline implements IInorderPipeline {
         this.numCycles = 0;
     }
 
+    /** Cache homework ctor */
+    public InorderPipeline(BranchPredictor bp, ICache ic, ICache dc) {
+    }
+
     @Override
     public String[] groupMembers() {
         return new String[]{"Deependra Singh", "Clinton Nyabuto"};
