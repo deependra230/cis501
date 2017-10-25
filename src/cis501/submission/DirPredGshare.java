@@ -28,11 +28,11 @@ public class DirPredGshare extends DirPredBimodal {
 
         // update register
 		branchHistoryRegister = branchHistoryRegister << 1;
-		branchHistoryRegister = branchHistoryRegister & branchHistoryRegisterMask;
-
 		// update register LSB and BHT
-        if (actual == Direction.Taken) {
-            branchHistoryRegister = branchHistoryRegister | 1;
-        }
+		if (actual == Direction.Taken) {
+			branchHistoryRegister = branchHistoryRegister | 1;
+		}
+
+		branchHistoryRegister = branchHistoryRegister & branchHistoryRegisterMask;
 	}
 }
