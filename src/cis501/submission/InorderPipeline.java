@@ -34,8 +34,11 @@ public class InorderPipeline implements IInorderPipeline {
     private final Set<Bypass> bypasses;
     private final BranchPredictor branchPredictor;
 
+    private ICache insnCache = null;
+    private ICache dataCache = null;
+
     private List<Insn> pipeline;
-    private Insn lastFetchedInsn;
+    private Insn lastFetchedInsn = null;
 
     private long numInsns;
     private long numCycles;
@@ -85,6 +88,19 @@ public class InorderPipeline implements IInorderPipeline {
 
     /** Cache homework ctor */
     public InorderPipeline(BranchPredictor bp, ICache ic, ICache dc) {
+        this.additionalMemLatency = 0;
+        this.bypasses = Bypass.FULL_BYPASS;
+        this.branchPredictor = bp;
+
+        this.insnCache = ic;
+        this.dataCache = dc;
+
+        this.pipeline = new ArrayList<>(Stage.values().length);
+        initializePipeline(); // all stages set to null
+        this.lastFetchedInsn = null;
+
+        this.numInsns = 0;
+        this.numCycles = 0;
     }
 
     @Override
