@@ -44,7 +44,11 @@ public class InorderPipeline implements IInorderPipeline {
     private long numInsns;
     private long numCycles;
 
-    private int numCacheAccess = 0;
+    public int numInsnCacheAccess = 0;
+    public int numDataCacheAccess = 0;
+    public int numBPredTrain = 0;
+    public int numBranchInsns = 0;
+    public int numMemoryInsns = 0;
 
     /**
      * Create a new pipeline with the given additional memory latency.
@@ -156,7 +160,7 @@ public class InorderPipeline implements IInorderPipeline {
                 }
             }
             numCycles += 1;
-//            if (numCycles >= 30) {
+//            if (numCycles >= 1065) {
 //                System.out.println(numCycles);
 //            }
         }
@@ -187,6 +191,14 @@ public class InorderPipeline implements IInorderPipeline {
     private int advanceInsns(int remainingMemLatency, Set<Bypass> bypasses, List<Pair<Long, Long>> branchPredictorPCs,
                              InsnIterator ii) {
         // Insn in the W stage will always flow
+        if (hasInsn(Stage.WRITEBACK)) {
+            if (pipeline.get(Stage.WRITEBACK.i()).branchType != null) {
+                this.numBranchInsns = this.numBranchInsns + 1;
+            }
+            if (pipeline.get(Stage.WRITEBACK.i()).mem != null) {
+                this.numMemoryInsns = this.numMemoryInsns + 1;
+            }
+        }
         pipeline.set(Stage.WRITEBACK.i(), null);
 
         /*
@@ -203,37 +215,54 @@ public class InorderPipeline implements IInorderPipeline {
                 branchPredictionTrainingAndFlush(branchPredictorPCs, ii);
             }
 
-            // Filling up the pipeline before the M stage if some stages are empty
+            /* Filling up the pipeline before the M stage if some stages are empty
+            *  Three cases: 1. X is empty, D has insn
+            *               2. X has insn, D is empty, F has insn
+            *               3. X has insn, D has insn, F has insn
+            *  Other cases such as all FDX empty, or FD-empty-X-filled, or F-empty-DX-fill does not require filling up
+             */
             if (!hasInsn(Stage.EXECUTE) && hasInsn(Stage.DECODE)) {
+                // Case 1
+                // A.if no dependencies, or dependency is in the form of store-val, fill up the pipeline.
+                //      If dependencies, then we want to countDown the outstanding latencies in the other stages such as
+                //      the cache-latency in the F stage
+                // B. Also note that we complete the proceedings of this cycle and return
                 int dstReg = pipeline.get(Stage.MEMORY.i()).dstReg;
 
                 int src1 = pipeline.get(Stage.DECODE.i()).srcReg1;
                 int src2 = pipeline.get(Stage.DECODE.i()).srcReg2;
 
                 if ((dstReg == NO_REGISTER) || ((dstReg != src1)&&(dstReg != src2))) {
+                    // if no load use dependence
                     moveInsnToNextStage(Stage.DECODE);
                     updateBranchPredictionPCs(branchPredictorPCs, Stage.DECODE);
                     if (moveInsnToNextStage(Stage.FETCH)) {
                         updateBranchPredictionPCs(branchPredictorPCs, Stage.FETCH);
                     }
-
                 } else if ((pipeline.get(Stage.DECODE.i()).mem == MemoryOp.Store)
                         && (dstReg == src1)
-                        && (bypasses.contains(Bypass.WM))
-                        ) {
+                        && (bypasses.contains(Bypass.WM))) {
+                    // or dependence is on the store-value
                     moveInsnToNextStage(Stage.DECODE);
                     updateBranchPredictionPCs(branchPredictorPCs, Stage.DECODE);
                     if (moveInsnToNextStage(Stage.FETCH)) {
                         updateBranchPredictionPCs(branchPredictorPCs, Stage.FETCH);
                     }
+                } else {
+                    // or dependencies exist, and the only thing we can do is update the
+                    // bookkeeping for outstanding latencies
+                    countDownOutstandingInsnCacheLatency();
                 }
-
-            }
-
-            if (!hasInsn(Stage.DECODE) && hasInsn(Stage.FETCH)) {
+            } else if (!hasInsn(Stage.DECODE) && hasInsn(Stage.FETCH)) {
+                // Case 2
                 if (moveInsnToNextStage(Stage.FETCH)) {
                     updateBranchPredictionPCs(branchPredictorPCs, Stage.FETCH);
                 }
+            } else if (hasInsn(Stage.FETCH)) {
+                // Case 3
+                // Both F and D have insns--
+                // in this case, if F has outstanding cache-hit latency, we should take care of that.
+                countDownOutstandingInsnCacheLatency();
             }
             return remainingMemLatency;
         }
@@ -268,6 +297,8 @@ public class InorderPipeline implements IInorderPipeline {
             moveInsnToNextStage(Stage.EXECUTE);
             // calculate the cache latency for this insn (that just entered mem stage)
             remainingMemLatency += calculateAdditionalDataCacheLatency(pipeline.get(Stage.MEMORY.i()));
+            // countdown the outstanding latency in fetch if any
+            countDownOutstandingInsnCacheLatency();
             return remainingMemLatency;
         }
 
@@ -318,6 +349,13 @@ public class InorderPipeline implements IInorderPipeline {
             return false;
         }
         return true;
+    }
+
+    private void countDownOutstandingInsnCacheLatency() {
+        // insn cache latency in fetch stage
+        if (this.remainingInsnCacheLatency >= 1) {
+            this.remainingInsnCacheLatency = this.remainingInsnCacheLatency - 1;
+        }
     }
 
     private boolean moveInsnToNextStage(Stage currentStage) {
@@ -553,6 +591,7 @@ public class InorderPipeline implements IInorderPipeline {
         //make sure to train only once for a branch
         if (xInsn.branchType != null) {
             branchPredictor.train(xInsn.pc, xInsn.branchTarget, xInsn.branchDirection);
+            this.numBPredTrain = this.numBPredTrain + 1;
         }
 
         if (!predictedPC.getValue().equals(actualPC.getValue())) {
@@ -597,18 +636,19 @@ public class InorderPipeline implements IInorderPipeline {
     }
 
     private int calculateAdditionalDataCacheLatency(Insn insn) {
-        assert (insn != null);
         if (this.dataCache == null || insn.mem == null) {
             return 0;
         } else if (insn.mem == MemoryOp.Load) {
+            this.numDataCacheAccess++;
             return this.dataCache.access(true, insn.memAddress);
         } else {
+            this.numDataCacheAccess++;
             return this.dataCache.access(false, insn.memAddress);
         }
     }
 
     private int calculateAdditionalInsnCacheLatency(long pc) {
-        this.numCacheAccess++;
+        this.numInsnCacheAccess++;
         if (this.dataCache == null) {
             return 0;
         } else {

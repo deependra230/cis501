@@ -1,11 +1,7 @@
 package cis501.submission;
 
 import cis501.*;
-import org.junit.Before;
 import org.junit.Test;
-
-import java.util.LinkedList;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -39,7 +35,7 @@ public class CacheTraceTest {
         InsnIterator uiter = new InsnIterator(TRACE_FILE, 5000);
         sim.run(uiter);
         assertEquals(5000, sim.getInsns());
-        assertEquals(6870, sim.getCycles());
+        assertEquals(6900, sim.getCycles());
     }
 
     @Test
@@ -51,9 +47,8 @@ public class CacheTraceTest {
         ICache dataCache = new Cache(10, 1, 2, 0, 2, 3);
         InorderPipeline sim = new InorderPipeline(bp, insnCache, dataCache);
         InsnIterator uiter = new InsnIterator(TRACE_FILE, 5000);
-        // 13 to 14 insns there is clearly a problem.
         sim.run(uiter);
-        //assertEquals(5000, sim.getInsns());
+        assertEquals(5000, sim.getInsns());
         assertEquals(8132, sim.getCycles());
     }
 

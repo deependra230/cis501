@@ -57,7 +57,7 @@ public class Cache implements ICache {
             * We have a cache hit (tag matched and validBit = 1)
             * 1. update LRU state
             * 2. if load: nothing else to do
-            *       if store: update the dirty bit
+            *       if store: update the dirty bit to 1
             * */
             updateLRUState(addrIndex, addrWay);
             if (!load) {
@@ -107,8 +107,6 @@ public class Cache implements ICache {
     * if the block containing the address is present in the cache, and has validBit set to 1
     * */
     private int whichWayInCache(int index, int tag) {
-        assert (index < (1 << indexBits));
-        assert (tag < (1 << tagBits));
         for (int way = 0; way < ways; way++) {
             if ((tagArray[index][way] == tag) && (validBits[index][way])) {
                 return way;
