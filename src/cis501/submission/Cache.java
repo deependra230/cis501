@@ -39,6 +39,8 @@ public class Cache implements ICache {
         this.dirtyMissLatency = dirtyMissLatency;
 
         this.tagArray = new int[1 << indexBits][ways];
+    
+        
         this.validBits = new boolean[1 << indexBits][ways];
         this.dirtyBits = new boolean[1 << indexBits][ways];
         this.LRUStates = new int[1 << indexBits][ways];
@@ -46,6 +48,7 @@ public class Cache implements ICache {
 
     @Override
     public int access(boolean load, long address) {
+    
         int addrIndex = extractIndexBits(address);
         int addrTag = extractTagBits(address);
         int addrWay = whichWayInCache(addrIndex, addrTag);
@@ -65,13 +68,15 @@ public class Cache implements ICache {
             /*
             * We have a cache miss
             * 1. find the eviction candidate, record whether it is clean or dirty --- accordingly return the latency
-            * 2. if load: bring in the new block, i.e. update the tag value, set the valid bit to 1, set the dirty bit to 0
+            * 2. update the LRU_State
+            * 3. if load: bring in the new block, i.e. update the tag value, set the valid bit to 1, set the dirty bit to 0
             *       if store: bring in the new block, i.e. update the tag value, set the valid bit to 1, set the dirty bit to 1
             * */
             int evictionCandidateWay = getMinElementIndexArray(LRUStates[addrIndex]);
+            
             boolean dirtyBitValue = dirtyBits[addrIndex][evictionCandidateWay];
             boolean validBitValue = validBits[addrIndex][evictionCandidateWay];
-
+            updateLRUState(addrIndex, evictionCandidateWay);
             tagArray[addrIndex][evictionCandidateWay] = addrTag;
             validBits[addrIndex][evictionCandidateWay] = true;
             if (load) {
@@ -85,6 +90,7 @@ public class Cache implements ICache {
             }
             return cleanMissLatency;
         }
+        
     }
 
     private int extractIndexBits(long address) {
@@ -136,5 +142,15 @@ public class Cache implements ICache {
             }
         }
         return minIndex;
+    }
+    
+    private void printLRUBlock() {
+   	 for (int i = 0; i < tagArray[0].length; i++) {
+         if (i > 0) {
+            System.out.print(", ");
+         }
+         System.out.print(tagArray[0][i]);
+      }
+	 System.out.println(" ");
     }
 }

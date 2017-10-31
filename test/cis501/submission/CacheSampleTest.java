@@ -16,7 +16,7 @@ public class CacheSampleTest {
     private static final int DIRTY_MISS_LAT = 3;
 
     private static final int INDEX_BITS = 3;
-    private static final int WAYS = 1;
+    private static final int WAYS = 4;
     private static final int BLOCK_BITS = 2;
     private static final int BLOCK_SIZE = 1 << BLOCK_BITS; // 4B, 1 ARM insn per block
 
@@ -232,5 +232,7 @@ public class CacheSampleTest {
         //      f..dxmw|
         assertEquals(7 + (2 * CLEAN_MISS_LAT) + 2/*br mispred*/, pipe.getCycles());
     }
+    
+    
 
 }
