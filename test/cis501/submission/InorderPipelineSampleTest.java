@@ -282,7 +282,7 @@ public class InorderPipelineSampleTest {
     public void test_NoBypass_MemLat2_LoadStoreValueDependencyWithBubble() {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
-        insns.add(null);
+        insns.add(makeInsn(10, 11, 12, null));
         insns.add(makeInsn(-1, 3, 4, MemoryOp.Store)); // load to store value
 
         InorderPipeline sim_NoBypass_MemLat2 = new InorderPipeline(2, Bypass.NO_BYPASS);
@@ -290,31 +290,16 @@ public class InorderPipelineSampleTest {
         assertEquals(3, sim_NoBypass_MemLat2.getInsns());
         // 123456789abcdef
         // fdxm..w     |
+        //  fdx..mw
         //   fd...xm..w|
         assertEquals(13, sim_NoBypass_MemLat2.getCycles());
-    }
-
-    @Test
-    public void test_WMBypass_MemLat2_LoadStoreValueDependencyWithBubble() {
-        List<Insn> insns = new LinkedList<>();
-        insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
-        insns.add(null);
-        insns.add(makeInsn(-1, 3, 4, MemoryOp.Store)); // load to store value
-
-        InorderPipeline sim_WMBypass_MemLat2 = new InorderPipeline(2, EnumSet.of(Bypass.WM));
-        sim_WMBypass_MemLat2.run(new InsnIterator(insns));
-        assertEquals(3, sim_WMBypass_MemLat2.getInsns());
-        // 123456789abcdef
-        // fdxm..w   |
-        //   fdx.m..w|
-        assertEquals(11, sim_WMBypass_MemLat2.getCycles());
     }
 
     @Test
     public void test_WMBypass_MemLat2_LoadStoreAddrDependencyWithBubble() {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
-        insns.add(null);
+        insns.add(makeInsn(10, 11, 12, null));
         insns.add(makeInsn(-1, 4, 3, MemoryOp.Store)); // load to store addr
 
         InorderPipeline sim_WMBypass_MemLat2 = new InorderPipeline(2, EnumSet.of(Bypass.WM));
@@ -322,6 +307,7 @@ public class InorderPipelineSampleTest {
         assertEquals(3, sim_WMBypass_MemLat2.getInsns());
         // 123456789abcdef
         // fdxm..w     |
+        //  fdx..mw
         //   fd...xm..w|
         assertEquals(13, sim_WMBypass_MemLat2.getCycles());
     }
@@ -330,7 +316,7 @@ public class InorderPipelineSampleTest {
     public void test_WXBypass_MemLat2_LoadStoreAddrDependencyWithBubble() {
         List<Insn> insns = new LinkedList<>();
         insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
-        insns.add(null);
+        insns.add(makeInsn(10, 11, 12, null));
         insns.add(makeInsn(-1, 4, 3, MemoryOp.Store)); // load to store addr
 
         InorderPipeline sim_WXBypass_MemLat2 = new InorderPipeline(2, EnumSet.of(Bypass.WX));
@@ -338,6 +324,7 @@ public class InorderPipelineSampleTest {
         assertEquals(3, sim_WXBypass_MemLat2.getInsns());
         // 123456789abcdef
         // fdxm..w    |
+        //  fdx..mw
         //   fd..xm..w|
         assertEquals(12, sim_WXBypass_MemLat2.getCycles());
     }

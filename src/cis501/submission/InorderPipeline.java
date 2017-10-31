@@ -39,9 +39,12 @@ public class InorderPipeline implements IInorderPipeline {
 
     private List<Insn> pipeline;
     private Insn lastFetchedInsn = null;
+    private int remainingInsnCacheLatency = 0;
 
     private long numInsns;
     private long numCycles;
+
+    private int numCacheAccess = 0;
 
     /**
      * Create a new pipeline with the given additional memory latency.
@@ -123,21 +126,39 @@ public class InorderPipeline implements IInorderPipeline {
             remainingMemLatency = advanceInsns(remainingMemLatency, bypasses, branchPredictorPCs, ii);
 
             if (!hasInsn(Stage.FETCH) && ii.hasNext()) {
-                pipeline.set(Stage.FETCH.i(), ii.next());
-                numInsns += 1;
-
                 //simulate branch predictor
                 if (branchPredictor != null && lastFetchedInsn != null) {
                     // Note that we are only simulating the branch prediction, and hence we are putting the
-                    // last-correctly-fetched (because the trace is dynamic) insn's fall-through-pc instead of the
-                    // last-predicted-fetched insn's fall-through-pc.
+                    // last-correctly-fetched (because the trace is dynamic and we only have the correct insns)
+                    // insn's fall-through-pc instead of the last-predicted-fetched insn's fall-through-pc.
                     long predictedPC = branchPredictor.predict(lastFetchedInsn.pc, lastFetchedInsn.fallthroughPC());
                     branchPredictorPCs.set(0, new Pair<>(lastFetchedInsn.pc, predictedPC));
                 }
 
+                pipeline.set(Stage.FETCH.i(), ii.next());
+                numInsns += 1;
                 lastFetchedInsn = pipeline.get(Stage.FETCH.i());
+                if (branchPredictorPCs.get(0) == null) {
+                    // this means it is guaranteed to be not after a misprediction
+                    remainingInsnCacheLatency = calculateAdditionalInsnCacheLatency(pipeline.get(Stage.FETCH.i()).pc);
+                } else {
+                    // this is a prediction, so check two things
+                    //      1. it does not follow a misprediction
+                    //      2. it itself is a correct predicition
+                    // and access cache only if the two conditions are met
+                    boolean followsCorrectPrediction = false;
+                    if (branchPredictorPCs.get(1) == null || branchPredictorPCs.get(1).getValue().longValue() == pipeline.get(Stage.DECODE.i()).pc) {
+                        followsCorrectPrediction = true;
+                    }
+                    if ((followsCorrectPrediction) && (branchPredictorPCs.get(0).getValue().longValue() == pipeline.get(Stage.FETCH.i()).pc)){
+                        remainingInsnCacheLatency = calculateAdditionalInsnCacheLatency(branchPredictorPCs.get(0).getValue());
+                    }
+                }
             }
             numCycles += 1;
+//            if (numCycles >= 30) {
+//                System.out.println(numCycles);
+//            }
         }
     }
 
@@ -192,8 +213,9 @@ public class InorderPipeline implements IInorderPipeline {
                 if ((dstReg == NO_REGISTER) || ((dstReg != src1)&&(dstReg != src2))) {
                     moveInsnToNextStage(Stage.DECODE);
                     updateBranchPredictionPCs(branchPredictorPCs, Stage.DECODE);
-                    moveInsnToNextStage(Stage.FETCH);
-                    updateBranchPredictionPCs(branchPredictorPCs, Stage.FETCH);
+                    if (moveInsnToNextStage(Stage.FETCH)) {
+                        updateBranchPredictionPCs(branchPredictorPCs, Stage.FETCH);
+                    }
 
                 } else if ((pipeline.get(Stage.DECODE.i()).mem == MemoryOp.Store)
                         && (dstReg == src1)
@@ -201,15 +223,17 @@ public class InorderPipeline implements IInorderPipeline {
                         ) {
                     moveInsnToNextStage(Stage.DECODE);
                     updateBranchPredictionPCs(branchPredictorPCs, Stage.DECODE);
-                    moveInsnToNextStage(Stage.FETCH);
-                    updateBranchPredictionPCs(branchPredictorPCs, Stage.FETCH);
+                    if (moveInsnToNextStage(Stage.FETCH)) {
+                        updateBranchPredictionPCs(branchPredictorPCs, Stage.FETCH);
+                    }
                 }
 
             }
 
             if (!hasInsn(Stage.DECODE) && hasInsn(Stage.FETCH)) {
-                moveInsnToNextStage(Stage.FETCH);
-                updateBranchPredictionPCs(branchPredictorPCs, Stage.FETCH);
+                if (moveInsnToNextStage(Stage.FETCH)) {
+                    updateBranchPredictionPCs(branchPredictorPCs, Stage.FETCH);
+                }
             }
             return remainingMemLatency;
         }
@@ -242,6 +266,8 @@ public class InorderPipeline implements IInorderPipeline {
             //reaching here necessitates that stage X has an insn so no need to check before invoking misprediction check.
             branchPredictionTrainingAndFlush(branchPredictorPCs, ii);
             moveInsnToNextStage(Stage.EXECUTE);
+            // calculate the cache latency for this insn (that just entered mem stage)
+            remainingMemLatency += calculateAdditionalDataCacheLatency(pipeline.get(Stage.MEMORY.i()));
             return remainingMemLatency;
         }
 
@@ -270,6 +296,8 @@ public class InorderPipeline implements IInorderPipeline {
         if (hasInsn(Stage.EXECUTE)) {
             branchPredictionTrainingAndFlush(branchPredictorPCs, ii);
             moveInsnToNextStage(Stage.EXECUTE);
+            // calculate the cache latency for this insn (that just entered mem stage)
+            remainingMemLatency += calculateAdditionalDataCacheLatency(pipeline.get(Stage.MEMORY.i()));
         }
 
         if (hasInsn(Stage.DECODE)) {
@@ -278,8 +306,9 @@ public class InorderPipeline implements IInorderPipeline {
         }
 
         if (hasInsn(Stage.FETCH)) {
-            moveInsnToNextStage(Stage.FETCH);
-            updateBranchPredictionPCs(branchPredictorPCs, Stage.FETCH);
+            if (moveInsnToNextStage(Stage.FETCH)) {
+                updateBranchPredictionPCs(branchPredictorPCs, Stage.FETCH);
+            }
         }
         return remainingMemLatency;
     }
@@ -291,9 +320,14 @@ public class InorderPipeline implements IInorderPipeline {
         return true;
     }
 
-    private void moveInsnToNextStage(Stage currentStage) {
+    private boolean moveInsnToNextStage(Stage currentStage) {
+        if (currentStage == Stage.FETCH && this.remainingInsnCacheLatency >= 1) {
+            this.remainingInsnCacheLatency = this.remainingInsnCacheLatency - 1;
+            return false;
+        }
         pipeline.set(currentStage.next().i(), pipeline.get(currentStage.i()));
         pipeline.set(currentStage.i(), null);
+        return true;
     }
 
     private void updateBranchPredictionPCs(List<Pair<Long, Long>> branchPredictorPCs, Stage stage){
@@ -487,35 +521,52 @@ public class InorderPipeline implements IInorderPipeline {
             return;
         }
 
-        /* We did not fetch anything in the last-to-last cycle(based on the prediction I mean  ---we could have the good
-        * insn in fetch after flush, but then it makes no sense to do the branch prediction analysis)
-        *
-        * Or, we fetched the correct predicted insn in the last-to-last cycle and we checked already.
-        * */
-        if (branchPredictorPCs.get(1) == null) {
+        Pair<Long, Long> predictedPC, actualPC;
+        Stage candidateStage;
+
+        if (branchPredictorPCs.get(1) == null && branchPredictorPCs.get(0) == null) {
+            // did not make any prediction, or made a prediction and checked already that it was correct
+            // so set the predictors to null already (this checking is done below in this function)
             return;
+        } else if (branchPredictorPCs.get(1) != null) {
+            // unchecked prediction present in decode stage
+            predictedPC = branchPredictorPCs.get(1);
+            candidateStage = Stage.DECODE;
+        } else {
+            // decode is clear, but unchecked prediction present in fetch stage
+            predictedPC = branchPredictorPCs.get(0);
+            candidateStage = Stage.FETCH;
         }
 
         Insn xInsn = pipeline.get(Stage.EXECUTE.i());
-        long predictedAddress = branchPredictorPCs.get(1).getValue();
-        long actualAddress = pipeline.get(Stage.DECODE.i()).pc;
+        actualPC = new Pair<>(xInsn.pc, pipeline.get(candidateStage.i()).pc);
+        if (!predictedPC.getKey().equals(actualPC.getKey())) {
+            /* one case which it will work for is as follows:
+             * if the br insn is stuck at X stage, and the insn in D is correctly predicted
+             * then we would have set the branchPredictorPCs[1] to null, and therefore we will
+             * be comparing X to F, which is not right (insn in D is responsible for the prediction for the insn in
+             * F, not the insn in X)
+             */
+            return;
+        }
 
+        //make sure to train only once for a branch
         if (xInsn.branchType != null) {
             branchPredictor.train(xInsn.pc, xInsn.branchTarget, xInsn.branchDirection);
         }
 
-        if (predictedAddress != actualAddress) {
+        if (!predictedPC.getValue().equals(actualPC.getValue())) {
             // flush if incorrect prediction
             branchMisPredictionFlush(branchPredictorPCs, ii);
         } else {
-            /* if correct, set decode-predicted-pc to null to indicate that it has been checked
+            /* if correct, set (decode/fetch)-predicted-pc to null to indicate that it has been checked
             *   and no need to check in next cycle and therefore end up training again!
             *   Think F, D, X (has a br insn), M (has a mem insn) are full and M insn is stuck there because of mem
             *   latency and D has the correct insn (and therefore entire pipeline until M is stuck ),
             *   and you end up training every cycle during this process.  That would be incorrect! Train only once
             *   per branch.
             *   */
-            branchPredictorPCs.set(1, null);
+            branchPredictorPCs.set(candidateStage.i(), null);
         }
     }
 
@@ -543,5 +594,25 @@ public class InorderPipeline implements IInorderPipeline {
             lastFetchedInsn = null;
         }
         return flushed;
+    }
+
+    private int calculateAdditionalDataCacheLatency(Insn insn) {
+        assert (insn != null);
+        if (this.dataCache == null || insn.mem == null) {
+            return 0;
+        } else if (insn.mem == MemoryOp.Load) {
+            return this.dataCache.access(true, insn.memAddress);
+        } else {
+            return this.dataCache.access(false, insn.memAddress);
+        }
+    }
+
+    private int calculateAdditionalInsnCacheLatency(long pc) {
+        this.numCacheAccess++;
+        if (this.dataCache == null) {
+            return 0;
+        } else {
+            return this.insnCache.access(true, pc);
+        }
     }
 }
