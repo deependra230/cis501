@@ -44,6 +44,7 @@ public class InorderPipeline implements IInorderPipeline {
     private long numInsns;
     private long numCycles;
 
+    // Used for debugging
     public int numInsnCacheAccess = 0;
     public int numDataCacheAccess = 0;
     public int numBPredTrain = 0;
@@ -160,9 +161,6 @@ public class InorderPipeline implements IInorderPipeline {
                 }
             }
             numCycles += 1;
-//            if (numCycles >= 1065) {
-//                System.out.println(numCycles);
-//            }
         }
     }
 
@@ -192,12 +190,12 @@ public class InorderPipeline implements IInorderPipeline {
                              InsnIterator ii) {
         // Insn in the W stage will always flow
         if (hasInsn(Stage.WRITEBACK)) {
-            if (pipeline.get(Stage.WRITEBACK.i()).branchType != null) {
-                this.numBranchInsns = this.numBranchInsns + 1;
-            }
-            if (pipeline.get(Stage.WRITEBACK.i()).mem != null) {
-                this.numMemoryInsns = this.numMemoryInsns + 1;
-            }
+//            if (pipeline.get(Stage.WRITEBACK.i()).branchType != null) {
+//                this.numBranchInsns = this.numBranchInsns + 1;
+//            }
+//            if (pipeline.get(Stage.WRITEBACK.i()).mem != null) {
+//                this.numMemoryInsns = this.numMemoryInsns + 1;
+//            }
         }
         pipeline.set(Stage.WRITEBACK.i(), null);
 
@@ -636,22 +634,26 @@ public class InorderPipeline implements IInorderPipeline {
     }
 
     private int calculateAdditionalDataCacheLatency(Insn insn) {
+        // It is invoked at two places, and both of them necessitate that insn is not null
         if (this.dataCache == null || insn.mem == null) {
             return 0;
         } else if (insn.mem == MemoryOp.Load) {
+            // load insn
             this.numDataCacheAccess++;
             return this.dataCache.access(true, insn.memAddress);
         } else {
+            // store insn
             this.numDataCacheAccess++;
             return this.dataCache.access(false, insn.memAddress);
         }
     }
 
     private int calculateAdditionalInsnCacheLatency(long pc) {
-        this.numInsnCacheAccess++;
-        if (this.dataCache == null) {
+        if (this.insnCache == null) {
             return 0;
         } else {
+            // will always be only load
+            this.numInsnCacheAccess++;
             return this.insnCache.access(true, pc);
         }
     }

@@ -128,7 +128,7 @@ public class CacheTest {
 	    	Cache LocalCache = new Cache(indexBits, ways, blockbits, ACCESS_LAT, CLEAN_MISS_LAT, DIRTY_MISS_LAT);
 	    	for (long address = 0; address < ways; address ++) {
 	    		int lat = LocalCache.access(true, address);
-	    		System.out.println("add: " + address + "latency: " + lat);
+	    		// System.out.println("add: " + address + "latency: " + lat);
 	    		assertEquals(CLEAN_MISS_LAT, lat);
 	    	}
 	    	//first address should still be there
@@ -143,7 +143,7 @@ public class CacheTest {
 	    	Cache LocalCache = new Cache(indexBits, ways, blockbits, ACCESS_LAT, CLEAN_MISS_LAT, DIRTY_MISS_LAT);
 	    	for (long address = 0; address < ways; address ++) {
 	    		int lat = LocalCache.access(true, address);
-	    		System.out.println("add: " + address + "latency: " + lat);
+	    		// System.out.println("add: " + address + "latency: " + lat);
 	    		assertEquals(CLEAN_MISS_LAT, lat);
 	    	}
 	    	//first address should still be there
