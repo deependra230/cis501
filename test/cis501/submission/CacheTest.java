@@ -68,7 +68,24 @@ public class CacheTest {
 	        lat = cache.access(true, lastByteInBlock);
 	        assertEquals(ACCESS_LAT, lat);
 	    }
+	    
+	    @Test
+	    public void testfirstTimeStore() {
+	    	assertEquals(CLEAN_MISS_LAT,cache.access(false, 0));
+	    }
 
+	    @Test
+	    public void testoneBlockZeroIndexOneWay() {
+	    	int indexBits = 0;
+	    	int ways = 1;
+	    	int blockbits =  0;
+	    	Cache LocalCache = new Cache(indexBits, ways, blockbits, ACCESS_LAT, CLEAN_MISS_LAT, DIRTY_MISS_LAT);
+	    	//everything should be a clean_Miss
+	    	for (int address = 0; address < 100; address ++) {
+	    		assertEquals(CLEAN_MISS_LAT,LocalCache.access(true, address));
+	    	} 	
+	    }
+	    
 	    @Test
 	    public void testLRU() {
 	        final long a = 0xFF << (INDEX_BITS + BLOCK_BITS);
