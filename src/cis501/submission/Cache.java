@@ -9,7 +9,7 @@ public class Cache implements ICache {
         assert indexBits >= 0;
         assert ways > 0;
         assert blockOffsetBits >= 0;
-        assert indexBits + blockOffsetBits < 32;
+        assert indexBits + blockOffsetBits <= 32;
         assert accessLatency >= 0;
         assert cleanMissLatency >= 0;
         assert dirtyMissLatency >= 0;
