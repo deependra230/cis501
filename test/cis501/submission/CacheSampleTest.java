@@ -208,8 +208,8 @@ public class CacheSampleTest {
     @Test
     public void testImissDmissIhitDhit() {
         List<Insn> insns = new LinkedList<>();
-        insns.add(makeMem(1, 2, 3, 0x0, 1, MemoryOp.Load, 0x42));
-        insns.add(makeMem(1, 2, 3, 0x2, 1, MemoryOp.Load, 0x42));
+        insns.add(makeMem(1, 2, 3, 0x0, 2, MemoryOp.Load, 0x42));
+        insns.add(makeMem(1, 2, 3, 0x2, 2, MemoryOp.Load, 0x42));
         pipe.run(new InsnIterator(insns));
 
         assertEquals(2, pipe.getInsns());
