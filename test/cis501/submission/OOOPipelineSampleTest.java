@@ -539,6 +539,20 @@ public class OOOPipelineSampleTest {
         }
 
         @Test
+        public void testStoreMissLoadHit() {
+            // check that stores access cache during M
+            List<Insn> insns = new LinkedList<>();
+            insns.add(makeMemInsn(-1, 1, 2, MemoryOp.Store, 0x0)); // D$ miss
+            insns.add(makeMemInsn(3, 1, 2, MemoryOp.Load, 0x0)); // D$ hit
+            sim.run(new InsnIterator(insns));
+            assertEquals(TestUtils.i2s(insns), 2, sim.getInsns());
+            // 1234567890123456789
+            // fdrsigxm..wc |
+            //  fdrsigx  mwc|
+            assertEquals(TestUtils.i2s(insns), 14, sim.getCycles());
+        }
+
+        @Test
         public void testLoadUse() {
             List<Insn> insns = new LinkedList<>();
             insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
