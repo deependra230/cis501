@@ -115,6 +115,32 @@ public class OOOPipelineSampleTest {
         }
 
         @Test
+        public void testRegDep1() {
+            List<Insn> insns = new LinkedList<>();
+            insns.add(makeInsn(2, 1, 1, null));
+            insns.add(makeInsn(3, 2, 1, null));
+            sim.run(new InsnIterator(insns));
+            assertEquals(TestUtils.i2s(insns), 2, sim.getInsns());
+            // 123456789abc
+            // fdrsigxmwc |
+            //  fdrsigxmwc|
+            assertEquals(TestUtils.i2s(insns), 12, sim.getCycles());
+        }
+
+        @Test
+        public void testRegDep2() {
+            List<Insn> insns = new LinkedList<>();
+            insns.add(makeInsn(2, 1, 1, null));
+            insns.add(makeInsn(3, 1, 2, null));
+            sim.run(new InsnIterator(insns));
+            assertEquals(TestUtils.i2s(insns), 2, sim.getInsns());
+            // 123456789abc
+            // fdrsigxmwc |
+            //  fdrsigxmwc|
+            assertEquals(TestUtils.i2s(insns), 12, sim.getCycles());
+        }
+
+        @Test
         public void test1MemInsn() {
             List<Insn> insns = new LinkedList<>();
             insns.add(makeInsn(3, 1, 2, MemoryOp.Load));
