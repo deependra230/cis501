@@ -783,9 +783,9 @@ public class OOOPipelineSampleTest {
             // 123456789012345678901
             // fdrsigxm.....wc     |
             //  fdr sigx    mwc    |
-            //   fdr  sig   xmwc   |
-            //    fdr   si  gxmwc  |
-            //     fdr      sigxmwc|
+            //   fd r sig   xmwc   |
+            //    f d r si  gxmwc  |
+            //      f d r   sigxmwc|
             assertEquals(TestUtils.i2s(insns), 21, sim.getCycles());
         }
 
@@ -802,9 +802,9 @@ public class OOOPipelineSampleTest {
             // 1234567890123456789012345678
             // fdrsigxm.....wc            |
             //  fdr s       igxm.....wc   |
-            //   fdr         sigx    mwc  |
-            //    fdr          sig   xmwc |
-            //     fdr           si  gxmwc|
+            //   fd r        sigx    mwc  |
+            //    f d        r sig   xmwc |
+            //      f        d r si  gxmwc|
             assertEquals(TestUtils.i2s(insns), 28, sim.getCycles());
         }
     }
