@@ -2,6 +2,9 @@ package cis501.parallelism;
 
 public interface IConvolutionRunner {
 
+    /** @return the names of the group members for this assignment. */
+    public String[] groupMembers();
+
     /**
      * Perform a parallel convolution
      *
