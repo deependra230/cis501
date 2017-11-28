@@ -85,4 +85,33 @@
     </junit>
   </target>
 
+  <!-- Run blur program sequentially -->
+  <target name="blur-serial" depends="compile">
+    <java classname="cis501.parallelism.submission.ConvolutionRunner" fork="true">
+      <classpath>
+        <path refid="libClasspath"/>
+        <path refid="appClasspath"/>
+      </classpath>
+      <jvmarg line="-enableassertions"/> <!-- turn on Java assertions for easier debugging -->
+      <arg value="s"/> <!-- sequential -->
+      <arg value="src/cis501/parallelism/motorcycle.jpg"/> <!-- input file -->
+      <arg value="output.jpg"/> <!-- output file -->
+    </java>
+  </target>
+
+    <!-- Run blur program in parallel -->
+  <target name="blur-parallel" depends="compile">
+    <java classname="cis501.parallelism.submission.ConvolutionRunner" fork="true">
+      <classpath>
+        <path refid="libClasspath"/>
+        <path refid="appClasspath"/>
+      </classpath>
+      <jvmarg line="-enableassertions"/> <!-- turn on Java assertions for easier debugging -->
+      <arg value="p"/> <!-- parallel -->
+      <arg value="src/cis501/parallelism/motorcycle.jpg"/> <!-- input file -->
+      <arg value="output.jpg"/> <!-- output file -->
+    </java>
+  </target>
+
+
 </project>
