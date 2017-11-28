@@ -14,6 +14,11 @@ public class ConvolutionRunner implements IConvolutionRunner {
 
     private final static int KERNEL_SIZE = 31;
 
+    /** @return the names of the group members for this assignment. */
+    public String[] groupMembers() {
+        return new String[] {"your", "names"};
+    }
+
     public static void main(String[] args) throws Exception {
         if (args.length != 3) {
             printUsage();
@@ -77,7 +82,7 @@ public class ConvolutionRunner implements IConvolutionRunner {
     }
 
     /** Creates a square Gaussian kernel with size^2 elements. */
-    private static float[][] createGaussianKernel(final int size) {
+    public static float[][] createGaussianKernel(final int size) {
         // initialize kernel
         assert (size > 0) && ((size & 1) == 1) : "Kernel must have odd size";
 
