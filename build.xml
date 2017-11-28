@@ -65,7 +65,7 @@
         <path refid="appClasspath"/>
       </classpath>
       <jvmarg line="-enableassertions"/> <!-- turn on Java assertions for easier debugging -->
-      <arg value="/path/to/trace/file"/> <!-- TODO: set path to trace file -->
+      <arg value="test/resources/cis501/submission/streamcluster-10M-v2.trace.gz"/> <!-- TODO: set path to trace file -->
       <arg value="-1"/> <!-- run on entire trace file -->
     </java>
   </target>

@@ -116,7 +116,7 @@ public class OOOPipeline implements IOOOPipeline {
 
     @Override
     public String[] groupMembers() {
-        return new String[]{"Clinton Neyabuto", "Deependra Singh"};
+        return new String[]{"Clinton Nyabuto", "Deependra Singh"};
     }
 
     @Override

@@ -371,6 +371,115 @@ public class OOOPipelineSampleTest {
             assertEquals(MSG + TestUtils.i2s(insns), 19, sim.getCycles());
         }
     }
+    
+    public static class RenameTestsNoExtraPregs {
+
+        @Rule
+        public final Timeout globalTimeout = Timeout.seconds(2);
+        private final int PREGS = NUM_ARCH_REGS;
+        private String MSG;
+        private IOOOPipeline sim;
+
+        @Before
+        public void setup() {
+            MSG = "[pregs = " + PREGS + "]";
+            sim = new OOOPipeline(PREGS, 20, 5, null, null);
+        }
+
+        @Test
+        public void testEnoughPregs() {
+            List<Insn> insns = new LinkedList<>();
+            insns.add(makeInsn(3, 1, 2, null));
+            insns.add(makeInsn(4, 1, 2, null));
+            sim.run(new InsnIterator(insns));
+            assertEquals(MSG + TestUtils.i2s(insns), 2, sim.getInsns());
+            // 123456789abc
+            // fdrsigxmwc |
+            //  fdrsigxmwc|
+            assertEquals(MSG + TestUtils.i2s(insns), 12, sim.getCycles());
+        }
+
+        @Test
+        public void testOutOfPregs() {
+            List<Insn> insns = new LinkedList<>();
+            insns.add(makeInsn(3, 1, 2, null));
+            insns.add(makeInsn(4, 1, 2, null));
+            insns.add(makeInsn(5, 1, 2, null));
+            sim.run(new InsnIterator(insns));
+            assertEquals(MSG + TestUtils.i2s(insns), 3, sim.getInsns());
+            // 123456789abcdefhijk
+            // fdrsigxmwc        |
+            //  fdrsigxmwc       |
+            //   fdr......sigxmwc|
+            assertEquals(MSG + TestUtils.i2s(insns), 12 + 7, sim.getCycles());
+        }
+
+        @Test
+        public void testStoreNoAllocatePreg() {
+            List<Insn> insns = new LinkedList<>();
+            insns.add(makeInsn(3, 1, 2, null));
+            insns.add(makeInsn(3, 1, 2, null));
+            insns.add(makeInsn(-1, 1, 2, MemoryOp.Store)); // doesn't allocate a new preg
+            sim.run(new InsnIterator(insns));
+            assertEquals(MSG + TestUtils.i2s(insns), 3, sim.getInsns());
+            // 123456789abc
+            // fdrsigxmwc |
+            //  fdrsigxmwc|
+            assertEquals(MSG + TestUtils.i2s(insns), 13, sim.getCycles());
+        }
+
+        @Test
+        public void testAllocateForCondCodes1() {
+            List<Insn> insns = new LinkedList<>();
+            insns.add(makeCCInsn(3, 1, 2, CondCodes.WriteCC));
+            insns.add(makeCCInsn(4, 1, 2, null));
+            sim.run(new InsnIterator(insns));
+            assertEquals(MSG + TestUtils.i2s(insns), 2, sim.getInsns());
+            // 123456789abcdefhijk
+            // fdrsigxmwc        |
+            //  fdr.......sigxmwc|
+            assertEquals(MSG + TestUtils.i2s(insns), 19, sim.getCycles());
+        }
+
+        @Test
+        public void testAllocateForCondCodes2() {
+            List<Insn> insns = new LinkedList<>();
+            insns.add(makeCCInsn(3, 1, 2, CondCodes.ReadWriteCC));
+            insns.add(makeCCInsn(4, 1, 2, null));
+            sim.run(new InsnIterator(insns));
+            assertEquals(MSG + TestUtils.i2s(insns), 2, sim.getInsns());
+            // 123456789abcdefhijk
+            // fdrsigxmwc        |
+            //  fdr.......sigxmwc|
+            assertEquals(MSG + TestUtils.i2s(insns), 19, sim.getCycles());
+        }
+
+        @Test
+        public void testAllocateForCondCodes3() {
+            List<Insn> insns = new LinkedList<>();
+            insns.add(makeCCInsn(3, 1, 2, null));
+            insns.add(makeCCInsn(4, 1, 2, CondCodes.WriteCC));
+            sim.run(new InsnIterator(insns));
+            assertEquals(MSG + TestUtils.i2s(insns), 2, sim.getInsns());
+            // 123456789abcdefhijk
+            // fdrsigxmwc        |
+            //  fdr.......sigxmwc|
+            assertEquals(MSG + TestUtils.i2s(insns), 19, sim.getCycles());
+        }
+
+        @Test
+        public void testAllocateForCondCodes4() {
+            List<Insn> insns = new LinkedList<>();
+            insns.add(makeCCInsn(3, 1, 2, null));
+            insns.add(makeCCInsn(4, 1, 2, CondCodes.ReadWriteCC));
+            sim.run(new InsnIterator(insns));
+            assertEquals(MSG + TestUtils.i2s(insns), 2, sim.getInsns());
+            // 123456789abcdefhijk
+            // fdrsigxmwc        |
+            //  fdr.......sigxmwc|
+            assertEquals(MSG + TestUtils.i2s(insns), 19, sim.getCycles());
+        }
+    }
 
     public static class OneEntryROBTests {
 
@@ -808,5 +917,16 @@ public class OOOPipelineSampleTest {
             assertEquals(TestUtils.i2s(insns), 28, sim.getCycles());
         }
     }
+    
+    //test load dependence making sure that issures in cycle K
+    //test instruction cache which would cause stalls in the fetch stage
+    //check memory address of load with second byte not issued yet
+    //check 
+    
+    //WAW 
+    //WAR
+    // register dependencies checks
+    
+    //i$miss: I$ miss d$miss: D$ miss nopregs: no physical registers available causing stalls in Rename iqfull:
 
 }
