@@ -106,6 +106,7 @@ public class ConvolutionRunner implements IConvolutionRunner {
      */
     public ChannelValues sequentialConvolution(float[][] kernel, Int2D src, Int2D dst) {
         ConvolutionTask ic = new ConvolutionTask(kernel, src, 0, src.height, dst);
-        return ic.convolute();
+        ic.convolute();
+        return ConvolutionTask.channelValues;
     }
 }
