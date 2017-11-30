@@ -5,16 +5,14 @@ package cis501.parallelism.submission;
 import cis501.parallelism.ChannelValues;
 import cis501.parallelism.Int2D;
 
-import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.RecursiveAction;
-import java.util.concurrent.RecursiveTask;
 
 public class ConvolutionTask extends RecursiveAction {
 
     final private static int RED_MASK   = 0x00ff0000;
     final private static int GREEN_MASK = 0x0000ff00;
     final private static int BLUE_MASK  = 0x000000ff;
-    private static ChannelValues channelValues = new ChannelValues();
+    public static ChannelValues channelValues = new ChannelValues();
 
     final private float[][] kernel;
     final private Int2D srcPixels;
@@ -49,11 +47,10 @@ public class ConvolutionTask extends RecursiveAction {
     }
 
     /**
-     * Computes a convolution based on the ctor parameters
-     *
-     * @return aggregated channel values for all input pixels used in the blur
+     * Computes a convolution based on the ctor parameters. Computes aggregated channel values for
+     * all input pixels used in the blur into channelValues field.
      */
-    ChannelValues convolute() {
+    void convolute() {
 
         final int kernelWidthRadius = kernel[0].length >>> 1;
         final int kernelHeightRadius = kernel.length >>> 1;
@@ -93,7 +90,6 @@ public class ConvolutionTask extends RecursiveAction {
             }
         }
 
-        return channelValues;
     }
 
 }
