@@ -74,7 +74,7 @@ public class OOOPipelineTraceTest {
     * A: When ROB entries are not enough to accommodate enough insns to fill up the pipeline, we
     *       lose out on performance since some of the stages in our pipeline are empty while they
     *       can be utilized if not for the limited ROB size. Once ROB size is large enough to
-    *       accommodate all the insns that can be present in the pipeline (along with IQ), we are at
+    *       accommodate all the insns that can be present in the pipeline (including the instructions in IQ), we are at
     *       peak performance, and increasing ROB size does not help anymore.
     *
     *       Similarly, when issue queue entries are not enough to pool insns that are independent
