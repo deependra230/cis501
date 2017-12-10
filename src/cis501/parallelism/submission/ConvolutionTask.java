@@ -12,13 +12,14 @@ public class ConvolutionTask extends RecursiveAction {
     final private static int RED_MASK   = 0x00ff0000;
     final private static int GREEN_MASK = 0x0000ff00;
     final private static int BLUE_MASK  = 0x000000ff;
-    public static ChannelValues channelValues = new ChannelValues();
+    public static ChannelValues channelValues = new ChannelValues(); // global (static) --- needs synchronization
 
     final private float[][] kernel;
     final private Int2D srcPixels;
     final private int startRow;
     final private int numRows;
     final private Int2D dstPixels;
+    private ChannelValues localChannelValues; // local for each object --- does not need synchronization
 
     ConvolutionTask(float[][] kern, Int2D src, int start, int length, Int2D dst) {
         kernel = kern;
@@ -26,6 +27,7 @@ public class ConvolutionTask extends RecursiveAction {
         this.startRow = start;
         this.numRows = length;
         this.dstPixels = dst;
+        this.localChannelValues = new ChannelValues();
     }
 
     /** Clamp the given value to the interval [0,bound) */
@@ -42,8 +44,15 @@ public class ConvolutionTask extends RecursiveAction {
     /** Called during parallel execution by the ForkJoinPool */
     @Override
     public void compute() {
+        if (numRows <= 10) {
+            convolute();
+            return;
+        }
 
-        // TODO: fill in code here...
+        int split = numRows / 2;
+
+        invokeAll(new ConvolutionTask(kernel, srcPixels, startRow, split, dstPixels),
+                new ConvolutionTask(kernel, srcPixels, startRow + split, numRows - split, dstPixels));
     }
 
     /**
@@ -51,7 +60,6 @@ public class ConvolutionTask extends RecursiveAction {
      * all input pixels used in the blur into channelValues field.
      */
     void convolute() {
-
         final int kernelWidthRadius = kernel[0].length >>> 1;
         final int kernelHeightRadius = kernel.length >>> 1;
 
@@ -69,15 +77,15 @@ public class ConvolutionTask extends RecursiveAction {
                         final float k = kernel[kw][kh];
 
                         final int oldR = (pixel & RED_MASK) >> 16;
-                        channelValues.red += oldR;
+                        localChannelValues.red += oldR;
                         newR += oldR * k;
 
                         final int oldG = (pixel & GREEN_MASK) >> 8;
-                        channelValues.green += oldG;
+                        localChannelValues.green += oldG;
                         newG += oldG * k;
 
                         final int oldB = (pixel & BLUE_MASK);
-                        channelValues.blue += oldB;
+                        localChannelValues.blue += oldB;
                         newB += oldB * k;
                     }
                 }
@@ -88,6 +96,11 @@ public class ConvolutionTask extends RecursiveAction {
                         | (((int) newB) & BLUE_MASK);
                 dstPixels.set(j, i, dpixel);
             }
+        }
+
+        // merge to global channelValues should be synchronized
+        synchronized (channelValues) {
+            channelValues.merge(localChannelValues);
         }
 
     }

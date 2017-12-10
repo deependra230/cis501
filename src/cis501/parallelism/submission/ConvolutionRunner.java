@@ -10,6 +10,7 @@ import cis501.parallelism.Kernel;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.util.concurrent.ForkJoinPool;
 
 public class ConvolutionRunner implements IConvolutionRunner {
 
@@ -17,7 +18,7 @@ public class ConvolutionRunner implements IConvolutionRunner {
 
     /** @return the names of the group members for this assignment. */
     public String[] groupMembers() {
-        return new String[] {"your", "names"};
+        return new String[] {"Deependra Singh", "Clinton Nyabuto"};
     }
 
     public static void main(String[] args) throws Exception {
@@ -92,9 +93,12 @@ public class ConvolutionRunner implements IConvolutionRunner {
      * @return ChannelValues for all pixels processed by the blur
      */
     public ChannelValues parallelConvolution(float[][] kernel, Int2D src, int startRow, int numRows, Int2D dst) {
+        ConvolutionTask ic = new ConvolutionTask(kernel, src, 0, src.height, dst);
 
-        // TODO: fill in code here...
-        return null;
+        // creat the fork-join pool
+        ForkJoinPool pool = new ForkJoinPool();
+        pool.invoke(ic);
+        return ConvolutionTask.channelValues;
     }
 
     /**
